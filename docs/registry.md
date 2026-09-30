@@ -3,7 +3,8 @@
 > **Not built yet.** The recorder's plugin store and the registry repository
 > are the next step. This page describes how they're designed to work, so
 > plugins released now will fit. Until then, install a plugin by hand: unpack
-> its release into the plugins folder (below) and add it to `plugins.json`.
+> its release into the plugins folder (below), where the recorder's Plugins
+> page finds it, or add its executable with **Add from a file** on that page.
 
 The registry is a GitHub repository, `TrunkRecorder/plugins`, listing the
 plugins the recorder's plugin store offers. Each entry pins an exact release
@@ -88,5 +89,5 @@ It fetches the latest registry when the store is opened.
 
 A plugin doesn't have to be in the registry to run. The store can install one
 from a GitHub release URL, with a warning that nobody has reviewed it. And for
-development, `path` in `plugins.json` runs any executable. See
+development, **Add from a file** on the Plugins page runs any executable. See
 [Getting started](getting-started.md#6-run-it-inside-your-recorder).

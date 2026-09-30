@@ -109,8 +109,24 @@ plugin without the recorder. See [Testing](testing.md).
 
 ## 6. Run it inside your recorder
 
-Tell the recorder about your build in `plugins.json`. The file sits next to the
-recorder's `config.json`:
+Open the recorder's **Plugins** page and press **Add from a file**. Give it the
+path of your build, for example
+`/Users/you/code/trunk-plugin-pager/target/release/pager`. The recorder runs it
+with `--describe` and adds it, turned off, marked *your build*. Then:
+
+1. Press **Settings**. The form is drawn from your `Config` and `SystemConfig`,
+   so this is where you see your labels, help text and defaults as users will.
+   Save.
+2. Turn it **On**.
+3. Start recording. The card shows whether it's running, how many calls it
+   handled (from your `call_result`s), your status messages, and its recent
+   log. Its log lines also go to the recorder's log, prefixed with its id.
+
+Changes apply while recording: saving settings, or turning a plugin off and on,
+restarts the plugins. After you rebuild, turn yours off and on to run the new
+build.
+
+Behind the page is `plugins.json`, next to the recorder's `config.json`:
 
 - **macOS**: `~/Library/Application Support/trunk-lite/`
 - **Linux**: `~/.config/trunk-lite/`
@@ -131,10 +147,6 @@ recorder's `config.json`:
 
 `path` points the recorder at your build instead of an installed copy.
 `trunk-lite plugin list` shows what the recorder makes of the file.
-
-Start recording. Your plugin's log lines appear in the recorder's log,
-prefixed with its id. After you rebuild, stop and start recording to pick up
-the new binary.
 
 ## A README for your plugin
 

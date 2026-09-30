@@ -141,6 +141,15 @@ if keys.is_empty() {
 The recorder shows the error, and doesn't start the plugin again until
 recording next starts.
 
+## Seeing the form
+
+The recorder's **Plugins** page draws the form. Add your build there (see
+[Getting started](getting-started.md#6-run-it-inside-your-recorder)) and press
+**Settings** to see it the way users will: fields in declaration order, labels
+and help from your doc comments, defaults as placeholder text, secrets hidden
+behind **Show**, and the `SystemConfig` fields repeated under each system's
+short name. Empty text fields aren't saved, so your defaults apply.
+
 ## Where settings live
 
 The recorder keeps plugin settings in `plugins.json`, next to its
