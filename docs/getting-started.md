@@ -34,6 +34,14 @@ Change these:
 | `src/main.rs` | `name` in `manifest()`: the display name | `Pager` |
 | `LICENSE` | Your license | |
 
+Then tidy up what belongs to the template, not your plugin:
+
+- **Delete `docs/`**. It documents the template; it lives on in the template's
+  repository, where it's kept up to date.
+- **Rewrite `README.md`** for your plugin's users. See
+  [below](#a-readme-for-your-plugin).
+- **Delete `examples/settings.json`**, or rewrite it with your settings.
+
 ## 3. Build it and ask it who it is
 
 ```sh
@@ -126,6 +134,32 @@ recorder's `config.json`:
 Start recording. Your plugin's log lines appear in the recorder's log,
 prefixed with its id. After you rebuild, stop and start recording to pick up
 the new binary.
+
+## A README for your plugin
+
+Users read it on GitHub before they install, and reviewers read it before
+listing your plugin. Cover:
+
+```markdown
+# Pager
+
+Pages your phone when a talkgroup goes active. A plugin for Trunk Recorder Lite.
+
+## What it needs
+An ntfy.sh topic (free). Nothing to install.
+
+## Settings
+| Setting | |
+|---|---|
+| Topic | Your ntfy.sh topic. |
+| Talkgroups | The talkgroups to page for, by number. |
+
+## What it sends where
+A notification with the talkgroup's name to ntfy.sh, for each call on your talkgroups. Nothing else.
+```
+
+"What it sends where" matters: users are trusting your plugin with their
+recorder, and the [registry](registry.md) review checks it.
 
 ## 7. Release it
 

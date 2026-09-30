@@ -10,12 +10,17 @@ and stops it. Plugins watch; they don't change what gets recorded. Uploaders
 (OpenMHz, Broadcastify), streamers, loggers and notifiers are all plugins.
 
 The example here, **call-log**, writes a line of JSON for every recorded call.
+For a complete uploader built from this template, see the
+[OpenMHz plugin](https://github.com/TrunkRecorder/trunk-plugin-openmhz).
 
 ## Quick start
 
 1. **Use this template** on GitHub (or copy it) to make your plugin's repository.
 2. In `Cargo.toml`, set `name` (your plugin's id), `description`, `repository`
    and `authors`. In `src/main.rs`, set the display `name` in `manifest()`.
+   Delete `docs/` (it stays here, up to date) and rewrite this README for your
+   plugin's users. [Getting started](docs/getting-started.md#2-name-your-plugin)
+   has the full list.
 3. Build and look at what the recorder will see:
    ```sh
    cargo build
@@ -39,12 +44,17 @@ The example here, **call-log**, writes a line of JSON for every recorded call.
 | [Settings](docs/settings.md) | Config structs and the settings form drawn from them |
 | [Events](docs/events.md) | Everything a plugin can subscribe to, field by field |
 | [Audio](docs/audio.md) | WAV and M4A, and what to do when M4A isn't there |
+| [Writing an uploader](docs/uploading.md) | Keys, retries, requests: a plugin that sends calls to a service |
 | [Testing](docs/testing.md) | Unit tests, and running against real calls |
 | [Releasing](docs/releasing.md) | Versions, the release workflow, platforms |
 | [The plugin registry](docs/registry.md) | How plugins get listed, installed and updated |
 | [Protocol](docs/protocol.md) | The wire format, for plugins in other languages |
 
 The SDK's API reference is on [docs.rs/trunk-recorder-plugin](https://docs.rs/trunk-recorder-plugin).
+
+> **Before the SDK is on crates.io**, build against a checkout of
+> `trunk-recorder-lite` next to this repository. See
+> [Developing against an unreleased SDK](docs/testing.md#developing-against-an-unreleased-sdk).
 
 ## License
 

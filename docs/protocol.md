@@ -144,7 +144,7 @@ A line that isn't JSON is logged as it is.
 | Status | Meaning | The recorder |
 |---|---|---|
 | 0 | Stopped as asked | Nothing. |
-| 78 | Can't run with these settings | Shows the error, and doesn't restart it until the settings change. |
+| 78 | Can't run with these settings | Shows the error, and doesn't restart it until recording next starts. |
 | Anything else, or a signal | Crashed | Restarts it after 1, 2, 4, … up to 60 seconds. |
 
 ## Delivery

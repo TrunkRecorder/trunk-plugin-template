@@ -46,9 +46,25 @@ plugin has to cope. You find out in two places:
 - For each call: `call.files.m4a` is `None`. Encoding a single call can fail
   even when an encoder is there.
 
-What to do without M4A depends on the service. Upload the WAV if it accepts
-WAV. If it doesn't, report the call as `Failed` and explain, or set a
-`Warning` status once so the user knows to install ffmpeg.
+What to do without M4A depends on the service:
+
+- **It takes WAV too**: upload the WAV, and warn once at startup that uploads
+  are bigger than they need to be.
+- **It takes only M4A**, like OpenMHz, which accepts `.m4a` and `.mp3` and
+  nothing else: refuse to start. Return an `Err` from `start` that says what
+  to install:
+  ```rust
+  if !setup.has_format(format::M4A) {
+      return Err("OpenMHz needs calls as M4A, and there's no M4A encoder on this computer. \
+                  Install ffmpeg, then start recording again.".into());
+  }
+  ```
+  The user sees it next to the plugin. That's better than failing every call,
+  one log line at a time.
+
+Either way, a call can still arrive without `files.m4a` when encoding just
+that call failed. Report it as `Failed` ("this call couldn't be encoded as
+M4A") rather than sending the wrong format.
 
 On macOS, afconvert is always there, so M4A always is.
 

@@ -49,7 +49,9 @@ close stdin                                exits
 3. **Ready.** If `start` returns `Ok`, the SDK sends `ready`, and the recorder
    shows the plugin as running. If it returns `Err`, the SDK reports the error
    and exits with status 78, which tells the recorder the settings are wrong.
-   The recorder won't restart the plugin until the user changes its settings.
+   The recorder doesn't restart the plugin while it keeps recording; it tries
+   again the next time recording starts (after the user has fixed the settings,
+   or installed what was missing).
 4. **Events.** The SDK calls your method for each event, one at a time, in
    order.
 5. **Shutdown.** When recording stops, the recorder sends `shutdown` and closes
@@ -93,10 +95,18 @@ While a method runs, the next events wait in the plugin's queue. The queue
 holds about a thousand. If it fills up, the recorder drops events for that
 plugin and logs that it's falling behind.
 
-So an event method should return in milliseconds. Hand anything slower to a
-thread of your own: network requests, spawning programs, big file copies.
+So an event method should return in milliseconds. Hand anything slower to
+another thread: network requests, spawning programs, big file copies.
+
+- **For calls**, use the SDK's `CallQueue`. It runs your function on
+  background threads, retries with backoff, reports results, and saves what's
+  left at shutdown. See [Writing an uploader](uploading.md).
+- **For other events** (live audio to a stream, unit events to a database),
+  start a thread in `start` and send it work over a channel
+  (`std::sync::mpsc`). Join it in `shutdown`.
+
 The template's example ([`src/main.rs`](../src/main.rs)) writes a line to a
-file inline, which is fast enough. An uploader shouldn't upload inline.
+file inline, which is fast enough.
 
 ## Talking back
 
@@ -118,7 +128,7 @@ cheap to clone and works from any thread.
 
 | What happens | What the recorder does |
 |---|---|
-| `start` returns `Err` (exit status 78) | Shows the error. Doesn't restart the plugin until its settings change. |
+| `start` returns `Err` (exit status 78) | Shows the error. Doesn't restart the plugin until recording next starts. |
 | The plugin panics or exits | Logs it and restarts it after 1 s, then 2 s, 4 s, … up to a minute between tries. The delay resets once the plugin has run for a minute. Events wait in the queue meanwhile. |
 | The plugin falls behind | Drops that plugin's events once its queue is full, and logs how many. |
 | `--describe` fails or prints nonsense | Doesn't start the plugin, and says why. |

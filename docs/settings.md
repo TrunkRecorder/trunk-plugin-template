@@ -57,8 +57,10 @@ The attributes do the following:
   recorder's convention for its own settings.
 
 Doc comments become the form's text. The first paragraph is the field's
-**label**; the rest is **help** shown under it. Keep labels short, and write
-help for someone who isn't a programmer.
+**label**; the rest is **help** shown under it. Wrap them however you like: line
+breaks inside a paragraph are joined up. Keep labels short, and write help
+for someone who isn't a programmer. The doc comment on the struct itself is
+for programmers, and isn't shown.
 
 ## What the form can show
 
@@ -136,8 +138,8 @@ if keys.is_empty() {
 }
 ```
 
-The recorder shows the error and doesn't start the plugin again until its
-settings change.
+The recorder shows the error, and doesn't start the plugin again until
+recording next starts.
 
 ## Where settings live
 
@@ -165,7 +167,9 @@ Users upgrade plugins but keep their settings, so:
 
 - **Adding a field** is safe, as long as the struct has `#[serde(default)]`.
 - **Renaming a field** loses what users entered. Use `#[serde(alias = "old")]`
-  to keep reading the old name.
+  to keep reading the old name. Aliases also let people coming from Trunk
+  Recorder paste their old plugin settings: the OpenMHz plugin reads
+  `uploadServer` and `openmhzSystemId`, TR's names, as well as its own.
 - **Removing a field** is safe, since unknown fields are ignored.
 - **Changing a field's type** breaks existing settings. Add a new field instead.
 
