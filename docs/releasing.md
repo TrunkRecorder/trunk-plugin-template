@@ -43,7 +43,7 @@ platform by name, and the registry pins them by checksum.
 
 ## Before you tag
 
-- `cargo test` passes, and CI is green.
+- `cargo fmt --check`, `cargo clippy -- -D warnings` and `cargo test` pass, and CI is green.
 - `--describe` shows the right name, description and repository. The release
   workflow refuses the template's placeholders.
 - You've run the release build against real calls with `trunk-lite plugin run`.

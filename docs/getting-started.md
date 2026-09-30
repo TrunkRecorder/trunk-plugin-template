@@ -103,7 +103,8 @@ Start with `src/main.rs`. The example shows each part a plugin has:
 Read [How plugins work](how-plugins-work.md) before you do anything slow, such
 as network calls, in an event method.
 
-Keep `cargo test` passing as you go. The example's tests show how to drive a
+Run `cargo fmt` as you go. `rustfmt.toml` sets the recorder's own style (long
+lines, compact expressions), and CI checks it. Keep `cargo test` passing too. The example's tests show how to drive a
 plugin without the recorder. See [Testing](testing.md).
 
 ## 6. Run it inside your recorder

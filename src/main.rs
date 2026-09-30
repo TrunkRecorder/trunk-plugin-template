@@ -29,10 +29,7 @@ struct Config {
 
 impl Default for Config {
     fn default() -> Self {
-        Config {
-            file: "calls.jsonl".into(),
-            include_encrypted: false,
-        }
+        Config { file: "calls.jsonl".into(), include_encrypted: false }
     }
 }
 
@@ -75,11 +72,7 @@ impl Plugin for CallLog {
             path = setup.data_dir.join(path);
         }
         // An Err here is shown to the user as a settings problem.
-        let file = OpenOptions::new()
-            .create(true)
-            .append(true)
-            .open(&path)
-            .map_err(|e| format!("can't open {}: {e}", path.display()))?;
+        let file = OpenOptions::new().create(true).append(true).open(&path).map_err(|e| format!("can't open {}: {e}", path.display()))?;
         let labels = setup
             .systems
             .iter()
@@ -94,28 +87,17 @@ impl Plugin for CallLog {
             })
             .collect();
         host.info(format!("logging calls to {}", path.display()));
-        Ok(CallLog {
-            host,
-            out: BufWriter::new(file),
-            include_encrypted: setup.config.include_encrypted,
-            labels,
-        })
+        Ok(CallLog { host, out: BufWriter::new(file), include_encrypted: setup.config.include_encrypted, labels })
     }
 
     fn call_concluded(&mut self, call: ConcludedCall) {
-        let label = self
-            .labels
-            .iter()
-            .find(|(i, _)| *i == call.system)
-            .and_then(|(_, l)| l.clone());
+        let label = self.labels.iter().find(|(i, _)| *i == call.system).and_then(|(_, l)| l.clone());
         let Some(label) = label else {
-            self.host
-                .call_result(&call.path, Outcome::Skipped, "system not logged", "");
+            self.host.call_result(&call.path, Outcome::Skipped, "system not logged", "");
             return;
         };
         if call.call.encrypted && !self.include_encrypted {
-            self.host
-                .call_result(&call.path, Outcome::Skipped, "encrypted", "");
+            self.host.call_result(&call.path, Outcome::Skipped, "encrypted", "");
             return;
         }
         let c = &call.call;
@@ -131,9 +113,7 @@ impl Plugin for CallLog {
         let r = writeln!(self.out, "{line}").and_then(|_| self.out.flush());
         match r {
             Ok(()) => self.host.call_result(&call.path, Outcome::Ok, "", ""),
-            Err(e) => self
-                .host
-                .call_result(&call.path, Outcome::Failed, e.to_string(), ""),
+            Err(e) => self.host.call_result(&call.path, Outcome::Failed, e.to_string(), ""),
         }
     }
 
@@ -158,18 +138,10 @@ mod tests {
         let mut hello = testing::hello(&dir, json!({ "file": "out.jsonl" }));
         hello.systems[0].config = json!({ "label": "County" });
         let call = testing::call(&dir, "sys1", 101);
-        let out = testing::run::<CallLog>([
-            HostMessage::Hello(hello),
-            HostMessage::CallConcluded(call.clone()),
-        ]);
+        let out = testing::run::<CallLog>([HostMessage::Hello(hello), HostMessage::CallConcluded(call.clone())]);
         assert!(out.ready());
-        assert_eq!(
-            out.results(),
-            vec![(call.path, Outcome::Ok, String::new(), String::new())]
-        );
-        let line: Value =
-            serde_json::from_str(&std::fs::read_to_string(dir.join("data/out.jsonl")).unwrap())
-                .unwrap();
+        assert_eq!(out.results(), vec![(call.path, Outcome::Ok, String::new(), String::new())]);
+        let line: Value = serde_json::from_str(&std::fs::read_to_string(dir.join("data/out.jsonl")).unwrap()).unwrap();
         assert_eq!(line["system"], "County");
         assert_eq!(line["talkgroup"], 101);
     }
@@ -179,10 +151,7 @@ mod tests {
         let dir = testing::temp_dir("call-log");
         let mut hello = testing::hello(&dir, Value::Null);
         hello.systems[0].config = json!({ "skip": true });
-        let out = testing::run::<CallLog>([
-            HostMessage::Hello(hello),
-            HostMessage::CallConcluded(testing::call(&dir, "sys1", 7)),
-        ]);
+        let out = testing::run::<CallLog>([HostMessage::Hello(hello), HostMessage::CallConcluded(testing::call(&dir, "sys1", 7))]);
         assert_eq!(out.results()[0].1, Outcome::Skipped);
     }
 
