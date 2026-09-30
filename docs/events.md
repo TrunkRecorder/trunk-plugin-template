@@ -51,6 +51,11 @@ uploaders and archivers.
   so existing tools and services understand it. The SDK's `CallRecord` names
   the common fields; the rest are in `call.extra`. `call.error_count()` and
   `call.spike_count()` add up the per-frequency counts.
+- **`call.patched_talkgroups`** is there only when the call's talkgroup was
+  patched with others during the call: every talkgroup in the patch, its own
+  included, in ascending order (`CallRecord::patched_talkgroups`, empty when
+  absent). A patched call is usually recorded on the patch's supergroup, which
+  is often not in the talkgroup list, so this is how to tell what it carried.
 - **`files.m4a`** is there only if the plugin asked for M4A and the recorder
   could make it. See [Audio](audio.md).
 
@@ -72,7 +77,8 @@ it was recorded, come later in `call.concluded`.
   "analog": false, "encrypted": false, "emergency": false,
   "recording": true, "reason": null,
   "start_time": 1790771550.2,
-  "units": [1116707]
+  "units": [1116707],
+  "patched_talkgroups": []
 }
 ```
 
@@ -83,6 +89,8 @@ it was recorded, come later in `call.concluded`.
   talkgroups aren't recorded), `no_recorder` (all in use) or `no_source` (no
   radio covers its frequency). More reasons may be added.
 - **`units`**: radios heard on the call so far. At `call.end`, all of them.
+- **`patched_talkgroups`**: the talkgroups patched with this one so far, its
+  own included, ascending; empty when it isn't patched.
 
 ## `unit`
 
