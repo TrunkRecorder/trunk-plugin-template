@@ -221,6 +221,21 @@ it. The call's JSON (`call.call`) has Trunk Recorder's field names, and the
 SDK sums what TR's uploaders summed: `error_count()`, `spike_count()`. Name
 your settings so TR's can be pasted in: `#[serde(alias = "apiKey")]`.
 
+TR's uploaders take talkgroup allow and deny lists of glob patterns
+(`"507*"`, `"12?45"`). The SDK's `TalkgroupFilter` matches them the same way,
+and `filter::patterns` reads a list that mixes numbers and strings:
+
+```rust
+#[serde(deserialize_with = "trunk_recorder_plugin::filter::patterns")]
+#[schemars(with = "Vec<String>")]
+talkgroup_allow: Vec<String>,
+// …
+let filter = TalkgroupFilter::new(&c.talkgroup_allow, &c.talkgroup_deny);
+if !filter.passes(call.call.talkgroup) {
+    return Attempt::Skip("talkgroup filter".into());
+}
+```
+
 ## 8. Test it without the service
 
 `testing::MockServer` stands in for the service; see

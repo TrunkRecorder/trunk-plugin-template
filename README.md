@@ -10,8 +10,12 @@ and stops it. Plugins watch; they don't change what gets recorded. Uploaders
 (OpenMHz, Broadcastify), streamers, loggers and notifiers are all plugins.
 
 The example here, **call-log**, writes a line of JSON for every recorded call.
-For a complete uploader built from this template, see the
-[OpenMHz plugin](https://github.com/TrunkRecorder/trunk-plugin-openmhz).
+For complete plugins built from this template, see the
+[OpenMHz](https://github.com/TrunkRecorder/trunk-plugin-openmhz),
+[Broadcastify](https://github.com/TrunkRecorder/trunk-plugin-broadcastify) and
+[Rdio Scanner](https://github.com/TrunkRecorder/trunk-plugin-rdioscanner)
+uploaders, [simplestream](https://github.com/TrunkRecorder/trunk-plugin-simplestream)
+(live audio) and [upload-script](https://github.com/TrunkRecorder/trunk-plugin-upload-script).
 
 ## Quick start
 

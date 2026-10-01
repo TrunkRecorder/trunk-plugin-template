@@ -76,10 +76,11 @@ for programmers, and isn't shown.
 | `Vec<String>`, `Vec<u32>`, … | List |
 | `Option<T>` | Same as `T`. Empty means `None`. |
 | A struct | A group of its fields |
+| `Vec` of a struct | A list of groups, with Add and Remove buttons. The struct's doc comment names each one ("Stream 1", "Add stream"). |
 
 Fields appear in the order you declare them.
 
-The form doesn't handle maps, lists of structs, or enums that carry data. Keep
+The form doesn't handle maps or enums that carry data. Keep
 settings flat, and name things users know, like "API key" rather than
 "auth token".
 
