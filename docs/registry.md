@@ -1,12 +1,12 @@
 # The plugin registry
 
-> **Not built yet.** The recorder's plugin store and the registry repository
-> are the next step. This page describes how they're designed to work, so
-> plugins released now will fit. Until then, install a plugin by hand: unpack
-> its release into the plugins folder (below), where the recorder's Plugins
-> page finds it, or add its executable with **Add from a file** on that page.
+> **The store isn't in the recorder yet.** The registry is up; the
+> recorder's plugin store, which installs from it, is next. Until then,
+> install a plugin by hand: unpack its release into the plugins folder
+> (below), where the recorder's Plugins page finds it, or add its executable
+> with **Add from a file** on that page.
 
-The registry is a GitHub repository, `TrunkRecorder/plugins`, listing the
+The registry is a GitHub repository, [`TrunkRecorder/plugins`](https://github.com/TrunkRecorder/plugins), listing the
 plugins the recorder's plugin store offers. Each entry pins an exact release
 of a plugin by checksum. The recorder installs only files that match, so what
 users get is what was reviewed.
@@ -19,15 +19,19 @@ Each plugin has a file, `plugins/<id>.json`:
 {
   "id": "openmhz",
   "name": "OpenMHz",
-  "description": "Uploads calls to OpenMHz.",
+  "description": "Uploads recorded calls to OpenMHz.",
   "repository": "https://github.com/TrunkRecorder/trunk-plugin-openmhz",
+  "homepage": "https://openmhz.com",
+  "license": "GPL-3.0-or-later",
   "tier": "official",
-  "version": "1.0.0",
+  "version": "0.1.1",
   "api": 1,
+  "tag": "v0.1.1",
+  "commit": "669ea2d10b193728b82276ec9ed77c81118f164f",
   "assets": {
     "x86_64-unknown-linux-gnu": {
-      "url": "https://github.com/TrunkRecorder/trunk-plugin-openmhz/releases/download/v1.0.0/openmhz-1.0.0-x86_64-unknown-linux-gnu.tar.gz",
-      "sha256": "9f2c…"
+      "url": "https://github.com/TrunkRecorder/trunk-plugin-openmhz/releases/download/v0.1.1/openmhz-0.1.1-x86_64-unknown-linux-gnu.tar.gz",
+      "sha256": "74c54539…"
     },
     "aarch64-unknown-linux-gnu": { "url": "…", "sha256": "…" },
     "universal-apple-darwin": { "url": "…", "sha256": "…" },
@@ -39,17 +43,24 @@ Each plugin has a file, `plugins/<id>.json`:
 `tier` is `official` for plugins maintained with the recorder, and `community`
 for everyone else's. The store shows the difference.
 
-You don't write the `assets` by hand. A script in the registry fills them in
-from your release's `SHA256SUMS`.
+`commit` is the commit the tag pointed at when the entry was added: a tag can
+be moved, so the commit records which source was reviewed.
+
+You don't write an entry by hand. The registry's `add-release` script writes
+it from your release's manifest and `SHA256SUMS`.
 
 ## Getting listed
 
 1. Release your plugin with the template's release workflow (see
    [Releasing](releasing.md)).
 2. Open a pull request on the registry that adds `plugins/<id>.json`. Run the
-   registry's `add-release` script to fill in the assets:
+   registry's `add-release` script to write it, then `check` to check it:
    `./add-release https://github.com/you/trunk-plugin-pager v0.1.0`.
-3. A maintainer reviews it.
+3. CI checks every file's checksum and build provenance, and runs the Linux
+   build's `--describe`. A maintainer reviews the rest.
+
+The registry's [README](https://github.com/TrunkRecorder/plugins#readme) has
+the details.
 
 What review looks for:
 
@@ -66,9 +77,7 @@ What review looks for:
 ## Updating
 
 Release the new version, then open a pull request that updates your entry's
-`version` and `assets`. `add-release` does it. A registry workflow also
-watches listed plugins for new releases and opens these pull requests on its
-own.
+entry. `add-release` writes it.
 
 The store shows **Update available** when the registry has a newer version
 than the one installed. Users update when they choose. Settings carry over.
