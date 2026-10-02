@@ -35,6 +35,12 @@ workflow uses that section as the release notes.
 
    Each archive holds a folder with the executable, `README.md` and `LICENSE`.
 
+   Every file also gets a **build provenance attestation**: a signed record,
+   kept by GitHub, that Actions built it from your repository at the tagged
+   commit. It's what lets the registry trust that a release came from your
+   source. Anyone can check a file with
+   `gh attestation verify <file> --repo <you>/<repo>`.
+
 These are the platforms Trunk Recorder Pro itself ships for. The Linux builds
 link against glibc 2.28, so they run on any distribution from about 2019 on.
 

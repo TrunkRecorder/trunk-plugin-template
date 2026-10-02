@@ -54,7 +54,8 @@ from your release's `SHA256SUMS`.
 What review looks for:
 
 - **The source is public**, and the release was built from it by GitHub
-  Actions, not uploaded from someone's computer.
+  Actions, not uploaded from someone's computer. The release workflow's
+  provenance attestations show this (see [Releasing](releasing.md)).
 - **It does what it says**, and nothing else. In particular, it sends no data
   anywhere the user didn't configure.
 - **Secrets are marked** `x-secret`, and never logged.
