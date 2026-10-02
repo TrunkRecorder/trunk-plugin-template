@@ -248,4 +248,4 @@ if !filter.passes(call.call.talkgroup) {
 - A system without a key is skipped, with no request made.
 
 Then run it against a stand-in on your computer with
-`trunk-lite plugin run`, and inside the recorder, before you release.
+`trunk-pro plugin run`, and inside the recorder, before you release.

@@ -6,7 +6,7 @@ recorder. It takes about fifteen minutes, most of it compiling.
 ## What you need
 
 - **Rust**, from [rustup.rs](https://rustup.rs). Any recent stable version.
-- **Trunk Recorder Lite**, installed and set up to record something. You'll
+- **Trunk Recorder Pro**, installed and set up to record something. You'll
   test against calls it has already recorded, so you don't need a radio
   attached while you work.
 - **Optional: ffmpeg**, if your plugin wants M4A audio (see [Audio](audio.md)).
@@ -56,12 +56,12 @@ decide how to run the plugin and how to draw its settings form. See
 
 ## 4. Run it against calls you've recorded
 
-`trunk-lite plugin run` starts a plugin the way the recorder does and sends
+`trunk-pro plugin run` starts a plugin the way the recorder does and sends
 it calls from disk, each as a `call.concluded` event. It prints everything the
 plugin says back:
 
 ```sh
-trunk-lite plugin run ./target/debug/pager ~/TrunkRecorderLite --limit 5
+trunk-pro plugin run ./target/debug/pager ~/TrunkRecorderPro --limit 5
 ```
 
 ```
@@ -82,7 +82,7 @@ To give it settings, put them in a file, like [`examples/settings.json`](../exam
 ```
 
 ```sh
-trunk-lite plugin run ./target/debug/pager ~/TrunkRecorderLite --settings settings.json
+trunk-pro plugin run ./target/debug/pager ~/TrunkRecorderPro --settings settings.json
 ```
 
 `config` holds the plugin's settings. `systems` holds its settings for each
@@ -128,9 +128,9 @@ build.
 
 Behind the page is `plugins.json`, next to the recorder's `config.json`:
 
-- **macOS**: `~/Library/Application Support/trunk-lite/`
-- **Linux**: `~/.config/trunk-lite/`
-- **Windows**: `%APPDATA%\trunk-lite\`
+- **macOS**: `~/Library/Application Support/trunk-pro/`
+- **Linux**: `~/.config/trunk-pro/`
+- **Windows**: `%APPDATA%\trunk-pro\`
 
 ```json
 {
@@ -146,7 +146,7 @@ Behind the page is `plugins.json`, next to the recorder's `config.json`:
 ```
 
 `path` points the recorder at your build instead of an installed copy.
-`trunk-lite plugin list` shows what the recorder makes of the file.
+`trunk-pro plugin list` shows what the recorder makes of the file.
 
 ## A README for your plugin
 
@@ -156,7 +156,7 @@ listing your plugin. Cover:
 ```markdown
 # Pager
 
-Pages your phone when a talkgroup goes active. A plugin for Trunk Recorder Lite.
+Pages your phone when a talkgroup goes active. A plugin for Trunk Recorder Pro.
 
 ## What it needs
 An ntfy.sh topic (free). Nothing to install.

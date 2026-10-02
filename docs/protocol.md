@@ -63,14 +63,14 @@ Every message has a `type`. The first is always `hello`.
 {
   "type": "hello",
   "api": 1,
-  "host": { "name": "trunk-lite", "version": "0.4.0" },
+  "host": { "name": "trunk-pro", "version": "0.4.0" },
   "config": { "server": "https://api.openmhz.com" },
   "systems": [
     { "index": 0, "short_name": "county", "kind": "p25", "config": { "apiKey": "…" } },
     { "index": 65535, "short_name": "conv", "kind": "conventional", "config": null }
   ],
-  "capture_dir": "/home/me/TrunkRecorderLite",
-  "data_dir": "/home/me/.config/trunk-lite/plugin-data/openmhz",
+  "capture_dir": "/home/me/TrunkRecorderPro",
+  "data_dir": "/home/me/.config/trunk-pro/plugin-data/openmhz",
   "audio_formats": ["wav", "m4a"]
 }
 ```

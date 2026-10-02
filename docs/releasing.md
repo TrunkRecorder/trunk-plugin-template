@@ -35,7 +35,7 @@ workflow uses that section as the release notes.
 
    Each archive holds a folder with the executable, `README.md` and `LICENSE`.
 
-These are the platforms Trunk Recorder Lite itself ships for. The Linux builds
+These are the platforms Trunk Recorder Pro itself ships for. The Linux builds
 link against glibc 2.28, so they run on any distribution from about 2019 on.
 
 **Keep the file names.** The recorder's installer finds the file for its
@@ -46,7 +46,7 @@ platform by name, and the registry pins them by checksum.
 - `cargo fmt --check`, `cargo clippy -- -D warnings` and `cargo test` pass, and CI is green.
 - `--describe` shows the right name, description and repository. The release
   workflow refuses the template's placeholders.
-- You've run the release build against real calls with `trunk-lite plugin run`.
+- You've run the release build against real calls with `trunk-pro plugin run`.
 - New settings have defaults, so existing installs keep working. See
   [Settings](settings.md#changing-your-settings-later).
 

@@ -77,7 +77,7 @@ The user can pick the encoder (or none) and the bitrate in `plugins.json`:
 ```
 
 `encoder` is one of `auto`, `ffmpeg`, `afconvert`, `fdkaac` or `none`.
-`trunk-lite plugin list` shows which encoder was found.
+`trunk-pro plugin list` shows which encoder was found.
 
 ## Files are shared
 

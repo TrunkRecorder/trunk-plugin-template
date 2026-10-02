@@ -1,4 +1,4 @@
-//! call-log — a Trunk Recorder Lite plugin that writes a line of JSON for
+//! call-log — a Trunk Recorder Pro plugin that writes a line of JSON for
 //! every recorded call.
 //!
 //! It's the template's example: replace it with your plugin. It shows the

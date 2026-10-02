@@ -1,6 +1,6 @@
-# Trunk Recorder Lite plugin template
+# Trunk Recorder Pro plugin template
 
-A starting point for a [Trunk Recorder Lite](https://github.com/TrunkRecorder/trunk-recorder-lite)
+A starting point for a [Trunk Recorder Pro](https://github.com/TrunkRecorder/trunk-recorder-pro)
 plugin in Rust: a working example plugin, tests, CI, and a release workflow
 that builds for every platform the recorder runs on.
 
@@ -32,7 +32,7 @@ uploaders, [simplestream](https://github.com/TrunkRecorder/trunk-plugin-simplest
    ```
 4. Run it against calls you've already recorded:
    ```sh
-   trunk-lite plugin run ./target/debug/call-log ~/TrunkRecorderLite --limit 5
+   trunk-pro plugin run ./target/debug/call-log ~/TrunkRecorderPro --limit 5
    ```
 5. Replace the example with your plugin, and keep the tests passing:
    `cargo test`.
@@ -55,10 +55,6 @@ uploaders, [simplestream](https://github.com/TrunkRecorder/trunk-plugin-simplest
 | [Protocol](docs/protocol.md) | The wire format, for plugins in other languages |
 
 The SDK's API reference is on [docs.rs/trunk-recorder-plugin](https://docs.rs/trunk-recorder-plugin).
-
-> **Before the SDK is on crates.io**, build against a checkout of
-> `trunk-recorder-lite` next to this repository. See
-> [Developing against an unreleased SDK](docs/testing.md#developing-against-an-unreleased-sdk).
 
 ## License
 

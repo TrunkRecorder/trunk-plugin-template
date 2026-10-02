@@ -36,9 +36,9 @@ uploaders and archivers.
     "srcList": [{ "src": 1116707, "time": 1790771550, "pos": 0, "emergency": 0, "signal_system": "", "tag": "", "tag_ota": "E14" }]
   },
   "files": {
-    "json": "/home/me/TrunkRecorderLite/county/2026/9/30/101-1790771550_857587500.json",
-    "wav": "/home/me/TrunkRecorderLite/county/2026/9/30/101-1790771550_857587500.wav",
-    "m4a": "/home/me/TrunkRecorderLite/county/2026/9/30/101-1790771550_857587500.m4a"
+    "json": "/home/me/TrunkRecorderPro/county/2026/9/30/101-1790771550_857587500.json",
+    "wav": "/home/me/TrunkRecorderPro/county/2026/9/30/101-1790771550_857587500.wav",
+    "m4a": "/home/me/TrunkRecorderPro/county/2026/9/30/101-1790771550_857587500.m4a"
   }
 }
 ```

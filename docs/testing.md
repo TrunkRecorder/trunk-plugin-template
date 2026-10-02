@@ -3,7 +3,7 @@
 There are three ways to exercise a plugin, from fastest to most real:
 
 1. **Unit tests** drive the plugin in-process with made-up events.
-2. **`trunk-lite plugin run`** runs the built plugin against calls you've
+2. **`trunk-pro plugin run`** runs the built plugin against calls you've
    recorded.
 3. **Inside the recorder**, with `path` in `plugins.json`.
 
@@ -86,12 +86,12 @@ for a full set.
 
 ## Against your recorded calls
 
-`trunk-lite plugin run` starts your build the way the recorder does and sends
+`trunk-pro plugin run` starts your build the way the recorder does and sends
 it calls from disk, each as `call.concluded`:
 
 ```sh
 cargo build
-trunk-lite plugin run ./target/debug/my-plugin ~/TrunkRecorderLite --limit 5 --settings settings.json
+trunk-pro plugin run ./target/debug/my-plugin ~/TrunkRecorderPro --limit 5 --settings settings.json
 ```
 
 | Option | |
@@ -135,7 +135,7 @@ recorder's repository. Create `.cargo/config.toml` (git ignores it):
 
 ```toml
 [patch.crates-io]
-trunk-recorder-plugin = { path = "../trunk-recorder-lite/crates/trunk-recorder-plugin" }
+trunk-recorder-plugin = { path = "../trunk-recorder-pro/crates/trunk-recorder-plugin" }
 ```
 
 Delete the file, then run `cargo update -p trunk-recorder-plugin`, before
