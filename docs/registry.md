@@ -1,10 +1,10 @@
 # The plugin registry
 
-> **The store isn't in the recorder yet.** The registry is up; the
-> recorder's plugin store, which installs from it, is next. Until then,
-> install a plugin by hand: unpack its release into the plugins folder
-> (below), where the recorder's Plugins page finds it, or add its executable
-> with **Add from a file** on that page.
+> The recorder's plugin store, on its **Plugins** page (and `trunk-pro plugin
+> search | install | update`), installs from this registry. It's in the
+> recorder's next release; until then, install a plugin by hand: unpack its
+> release into the plugins folder (below), or add its executable with **Add
+> from a file** on that page.
 
 The registry is a GitHub repository, [`TrunkRecorder/plugins`](https://github.com/TrunkRecorder/plugins), listing the
 plugins the recorder's plugin store offers. Each entry pins an exact release

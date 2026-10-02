@@ -70,10 +70,11 @@ On macOS, afconvert is always there, so M4A always is.
 
 ## Encoder settings
 
-The user can pick the encoder (or none) and the bitrate in `plugins.json`:
+The user picks the encoder (or none) and the bitrate in Setup's **Recording**
+tab. In the recorder's `config.json`:
 
 ```json
-{ "audio": { "encoder": "auto", "bitrateKbps": 32 } }
+{ "recording": { …, "m4a": { "encoder": "auto", "bitrateKbps": 32 } } }
 ```
 
 `encoder` is one of `auto`, `ffmpeg`, `afconvert`, `fdkaac` or `none`.

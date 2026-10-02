@@ -77,8 +77,31 @@ for programmers, and isn't shown.
 | `Option<T>` | Same as `T`. Empty means `None`. |
 | A struct | A group of its fields |
 | `Vec` of a struct | A list of groups, with Add and Remove buttons. The struct's doc comment names each one ("Stream 1", "Add stream"). |
+| `String` with `#[schemars(extend("x-system" = true))]` | Menu of the recorder's systems, by short name. When a system is renamed, the recorder changes the setting to match. |
 
 Fields appear in the order you declare them.
+
+### Fields that have to be filled in
+
+Mark a field the plugin can't do without with `x-required`:
+
+```rust
+/// API key
+#[schemars(extend("x-secret" = true, "x-required" = true))]
+api_key: String,
+```
+
+Until it's filled in, the recorder says so. A required field in `Config`
+marks the plugin **Needs setting up**. A required field in `SystemConfig`
+marks that system **Not set up** for your plugin, both on the system's card
+and in the row of systems on your plugin's card. Use it for what makes a
+system count as set up, such as an upload key, even when an empty key just
+means "don't upload this system".
+
+`#[schemars(required)]` does nothing on a `#[serde(default)]` struct, which
+is why it's marked this way. The SDK (0.1.1 and later) turns these marks into
+the schema's standard `required` list. Marking a field doesn't stop the user
+from saving without it, so still check in `start`.
 
 The form doesn't handle maps or enums that carry data. Keep
 settings flat, and name things users know, like "API key" rather than
@@ -100,6 +123,9 @@ enum Quality {
 
 ## Settings for each system
 
+Settings like an upload key differ from system to system. Put those in
+`SystemConfig`; the recorder shows them on each system's card in Setup.
+
 ```rust
 #[derive(Serialize, Deserialize, JsonSchema, Default)]
 #[serde(rename_all = "camelCase", default)]
@@ -111,7 +137,7 @@ struct SystemConfig {
 ```
 
 In `start`, `setup.systems` lists every system, each with its index, short
-name, kind (`p25`, `smartnet` or `conventional`), and your `SystemConfig`.
+name, kind (`p25`, `smartnet`, `dmr` or `conventional`), and your `SystemConfig`.
 The config is `None` when the user left that system's settings empty.
 Events name systems by index (`call.system`), so build your lookup in `start`:
 
@@ -144,32 +170,44 @@ recording next starts.
 
 ## Seeing the form
 
-The recorder's **Plugins** page draws the form. Add your build there (see
-[Getting started](getting-started.md#6-run-it-inside-your-recorder)) and press
-**Settings** to see it the way users will: fields in declaration order, labels
-and help from your doc comments, defaults as placeholder text, secrets hidden
-behind **Show**, and the `SystemConfig` fields repeated under each system's
-short name. Empty text fields aren't saved, so your defaults apply.
+Plugins are set up in the recorder's **Setup**, like the rest of it. Add your
+build on the **Plugins** page (see
+[Getting started](getting-started.md#6-run-it-inside-your-recorder)) and
+press **Set up** to see your forms the way users will:
+
+- `Config` is on your plugin's card in Setup's **Plugins** tab, under its
+  on/off switch, with a row of the systems showing which are set up.
+- `SystemConfig` is on each system's card under **Systems** (and under
+  **Conventional**), once your plugin is on.
+
+Fields come in declaration order, with labels and help from your doc
+comments, defaults as placeholder text and secrets hidden behind **Show**.
+Everything saves as it's typed. Empty fields aren't saved, so your defaults
+apply.
+
+When `SystemConfig` has a field with the same name as one in `Config`, the
+system's field shows the `Config` value as its placeholder: a setting for
+every system that each can override. Your plugin decides what an empty
+system field means; the upload-script plugin uses its main script.
 
 ## Where settings live
 
-The recorder keeps plugin settings in `plugins.json`, next to its
-`config.json`:
+In the recorder's `config.json`. Your plugin's switch and `Config` are under
+`plugins`; its `SystemConfig` for a system is inside that system:
 
 ```json
 {
   "plugins": {
-    "my-plugin": {
-      "enabled": true,
-      "config": { "server": "https://api.example.com", "retries": 3 },
-      "systems": { "county": { "apiKey": "…" } }
-    }
-  }
+    "my-plugin": { "enabled": true, "settings": { "server": "https://api.example.com", "retries": 3 } }
+  },
+  "systems": [
+    { "shortName": "county", …, "plugins": { "my-plugin": { "apiKey": "…" } } }
+  ]
 }
 ```
 
-Settings for each system are keyed by short name, so they stay with the
-system when systems are added or reordered.
+A system's settings go with it when it's renamed, and when it's removed.
+Uninstalling a plugin removes its settings everywhere.
 
 ## Changing your settings later
 

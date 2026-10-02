@@ -169,6 +169,12 @@ objects. The recorder's settings form understands this subset:
 | `{"type": "boolean"}` | Switch |
 | `{"type": "string", "enum": [...], "x-enum-labels": [...]}` | Menu |
 | `{"type": "array", "items": {"type": "string"}}` (or number) | List |
+| `{"type": "array", "items": {"type": "object", …}}` | A list of groups, added and removed one by one |
+| `{"type": "string", "x-system": true}` | Menu of the recorder's systems (short names); follows renames |
 
 On any field: `title` (the label; the key if there's none), `description`
 (help text), `default`.
+
+On an object: `required`, the keys that have to be filled in. Until they are,
+the recorder shows the plugin (for `config`) or that system (for
+`system_config`) as not set up. `"x-required": true` on a field means the same.

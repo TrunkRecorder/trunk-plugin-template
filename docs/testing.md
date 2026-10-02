@@ -5,7 +5,7 @@ There are three ways to exercise a plugin, from fastest to most real:
 1. **Unit tests** drive the plugin in-process with made-up events.
 2. **`trunk-pro plugin run`** runs the built plugin against calls you've
    recorded.
-3. **Inside the recorder**, with `path` in `plugins.json`.
+3. **Inside the recorder**, added with **Add from a file** (`path` in its config).
 
 ## Unit tests
 
@@ -107,7 +107,7 @@ It prints the plugin's log lines and statuses, and a line for each result:
 `✓` done, `–` skipped, `✗` failed.
 
 If you give it an id instead of a path, it runs that installed plugin with its
-settings from `plugins.json`.
+settings from the recorder's config.
 
 Calls you give it that are already in the recorder's capture folder keep
 their usual `path`. Others use their full path as the `path`.

@@ -114,19 +114,21 @@ path of your build, for example
 `/Users/you/code/trunk-plugin-pager/target/release/pager`. The recorder runs it
 with `--describe` and adds it, turned off, marked *your build*. Then:
 
-1. Press **Settings**. The form is drawn from your `Config` and `SystemConfig`,
-   so this is where you see your labels, help text and defaults as users will.
-   Save.
-2. Turn it **On**.
-3. Start recording. The card shows whether it's running, how many calls it
-   handled (from your `call_result`s), your status messages, and its recent
-   log. Its log lines also go to the recorder's log, prefixed with its id.
+1. Press **Set up**. It opens your plugin's card in Setup's **Plugins** tab,
+   with the form drawn from your `Config`: this is where you see your labels,
+   help text and defaults as users will.
+2. Turn it **On**. Your `SystemConfig` form now shows on each system's card
+   under **Systems**. Fill it in for a system or two.
+3. Start recording. The card on the Plugins page shows whether it's running,
+   how many calls it handled (from your `call_result`s), your status messages,
+   and its recent log. Its log lines also go to the recorder's log, prefixed
+   with its id.
 
-Changes apply while recording: saving settings, or turning a plugin off and on,
-restarts the plugins. After you rebuild, turn yours off and on to run the new
-build.
+Settings save as they're typed. While recording, a change to a plugin's
+settings, or turning it off and on, restarts the plugins. After you rebuild,
+turn yours off and on to run the new build.
 
-Behind the page is `plugins.json`, next to the recorder's `config.json`:
+It's all in the recorder's `config.json`:
 
 - **macOS**: `~/Library/Application Support/trunk-pro/`
 - **Linux**: `~/.config/trunk-pro/`
@@ -138,15 +140,15 @@ Behind the page is `plugins.json`, next to the recorder's `config.json`:
     "pager": {
       "enabled": true,
       "path": "/Users/you/code/trunk-plugin-pager/target/release/pager",
-      "config": { "file": "calls.jsonl" },
-      "systems": { "sys1": { "label": "County" } }
+      "settings": { "file": "calls.jsonl" }
     }
-  }
+  },
+  "systems": [{ "shortName": "sys1", …, "plugins": { "pager": { "label": "County" } } }]
 }
 ```
 
 `path` points the recorder at your build instead of an installed copy.
-`trunk-pro plugin list` shows what the recorder makes of the file.
+`trunk-pro plugin list` shows what the recorder makes of it.
 
 ## A README for your plugin
 
