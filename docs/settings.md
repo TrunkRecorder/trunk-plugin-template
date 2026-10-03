@@ -136,22 +136,30 @@ struct SystemConfig {
 }
 ```
 
-In `start`, `setup.systems` lists every system, each with its index, short
-name, kind (`p25`, `smartnet`, `dmr` or `conventional`), and your `SystemConfig`.
+In `start`, `setup.systems` lists every system, each with its short name,
+kind (`p25`, `smartnet`, `dmr` or `conventional`), and your `SystemConfig`.
 The config is `None` when the user left that system's settings empty.
-Events name systems by index (`call.system`), so build your lookup in `start`:
+
+A system's **short name** is its identity: no two of the recorder's systems
+share one, and every event carries it (`call.short_name`; a concluded call's
+`call.call.short_name`). Build your lookup in `start` by short name:
 
 ```rust
-let keys: HashMap<u16, String> = setup
+let keys: HashMap<String, String> = setup
     .systems
     .iter()
-    .filter_map(|s| Some((s.index, s.config.as_ref()?.api_key.clone())))
+    .filter_map(|s| Some((s.short_name.clone(), s.config.as_ref()?.api_key.clone())))
     .filter(|(_, k)| !k.is_empty())
     .collect();
 ```
 
-Conventional channels count as one system, with index
-`trunk_recorder_plugin::CONVENTIONAL` (65535).
+Each system also has an `index`, the number events carry as `system`. It is
+only good for this run: the same system can have another number next time.
+So don't key anything you save on it, such as calls queued for a later run.
+`setup.system_named(name)` finds a system by short name.
+
+Each conventional system is a system of its own, with its own short name and
+settings.
 
 ## Checking settings
 

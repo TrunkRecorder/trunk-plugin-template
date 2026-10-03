@@ -45,7 +45,9 @@ uploaders and archivers.
 
 - **`path`** is the call's key: its location relative to the capture folder,
   without an extension. Report results against it with `host.call_result(&call.path, …)`.
-- **`system`** is the index of the system in `setup.systems`.
+- **`system`** is the system's number for this run (`SystemInfo.index`). Know
+  systems by `call.short_name` instead: that is the system's identity, and it
+  stays the same from run to run.
 - **`call`** is the call's JSON file, in
   [Trunk Recorder's format](https://trunkrecorder.com/docs/notes/CALLFILE),
   so existing tools and services understand it. The SDK's `CallRecord` names

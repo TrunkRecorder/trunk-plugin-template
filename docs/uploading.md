@@ -71,7 +71,7 @@ fn start(host: Host, setup: Setup<Config, SystemConfig>) -> Result<Self, String>
         let Some(c) = &s.config else { continue };
         if !c.api_key.trim().is_empty() {
             host.info(format!("uploading {} (key …{})", s.short_name, last2(&c.api_key)));
-            keys.insert(s.index, c.api_key.trim().to_string());
+            keys.insert(s.short_name.clone(), c.api_key.trim().to_string());
         }
     }
     if keys.is_empty() {
@@ -100,6 +100,11 @@ to return in milliseconds (see
 - At shutdown, it keeps working until the grace period is nearly up. With
   `QueueOptions::saved_in(data_dir)`, it saves calls still waiting and sends
   them first at the next start.
+- It reports its health to the recorder's dashboard (the Plugins page): how
+  many calls wait, how long an upload takes, bytes sent, and whether the
+  service is **up**, **degraded** (retries) or **down** (three failures in a
+  row, or five minutes without a success while calls wait). Name the service
+  with `endpoint`.
 
 ```rust
 struct MyUploader {
@@ -107,9 +112,10 @@ struct MyUploader {
 }
 
 // in start:
-let opts = QueueOptions { noun: "upload", ..QueueOptions::saved_in(&setup.data_dir) };
+let opts = QueueOptions { noun: "upload", endpoint: Some("My Service".into()), ..QueueOptions::saved_in(&setup.data_dir) };
 let queue = CallQueue::start(host, opts, move |call: &ConcludedCall| {
-    let Some(key) = keys.get(&call.system) else {
+    // By short name: a call saved for the next run still finds its system.
+    let Some(key) = keys.get(&call.call.short_name) else {
         return Attempt::Skip("no API key for this system".into());
     };
     let Some(m4a) = &call.files.m4a else {
@@ -130,6 +136,11 @@ fn shutdown(&mut self, grace: Duration) {
 
 The work function runs on the queue's threads, so it has to be `Send + Sync`.
 Move what it needs (keys, an HTTP client) into the closure.
+
+A plugin that doesn't use the queue (a streamer, say) can report the same
+itself with `host.metrics(&Metrics { … })` every few seconds: any of
+`queued`, `latency_ms`, `bytes_sent`, `endpoints` (each with its state), and
+figures of its own in `extra`, shown as they are.
 
 ## 5. Say what happened: `Attempt`
 

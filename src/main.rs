@@ -49,8 +49,8 @@ struct CallLog {
     host: Host,
     out: BufWriter<File>,
     include_encrypted: bool,
-    /// Per system index: the label, or None to skip it.
-    labels: Vec<(u16, Option<String>)>,
+    /// Per system, by short name: the label, or None to skip it.
+    labels: Vec<(String, Option<String>)>,
 }
 
 impl Plugin for CallLog {
@@ -83,7 +83,7 @@ impl Plugin for CallLog {
                     Some(c) if !c.label.is_empty() => Some(c.label.clone()),
                     _ => Some(s.short_name.clone()),
                 };
-                (s.index, label)
+                (s.short_name.clone(), label)
             })
             .collect();
         host.info(format!("logging calls to {}", path.display()));
@@ -91,7 +91,8 @@ impl Plugin for CallLog {
     }
 
     fn call_concluded(&mut self, call: ConcludedCall) {
-        let label = self.labels.iter().find(|(i, _)| *i == call.system).and_then(|(_, l)| l.clone());
+        // Systems are known by short name: every event carries it.
+        let label = self.labels.iter().find(|(n, _)| *n == call.call.short_name).and_then(|(_, l)| l.clone());
         let Some(label) = label else {
             self.host.call_result(&call.path, Outcome::Skipped, "system not logged", "");
             return;
