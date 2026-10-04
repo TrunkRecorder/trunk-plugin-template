@@ -3,7 +3,7 @@
 # executable, the release files and the plugin's entry in the registry.
 name = "call-log"
 version = "0.1.0"
-edition = "2021"
+edition = "2024"
 description = "Writes a line of JSON for every recorded call."
 license = "MIT"
 repository = "https://github.com/YOUR-NAME/call-log"
