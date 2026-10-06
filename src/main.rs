@@ -12,7 +12,7 @@ use std::path::PathBuf;
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 use serde_json::json;
-use trunk_recorder_plugin::{topic, ConcludedCall, Host, Manifest, Outcome, Plugin, Setup};
+use trunk_recorder_plugin::{ConcludedCall, Host, Manifest, Outcome, Plugin, Setup, topic};
 
 /// The plugin's settings. The recorder draws a form from this (doc comments
 /// become the labels and help text) and passes what the user entered.
@@ -130,8 +130,8 @@ fn main() {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use serde_json::{json, Value};
-    use trunk_recorder_plugin::{testing, HostMessage};
+    use serde_json::{Value, json};
+    use trunk_recorder_plugin::{HostMessage, testing};
 
     #[test]
     fn logs_a_call() {
