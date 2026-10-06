@@ -1,10 +1,7 @@
 # The plugin registry
 
-> The recorder's plugin store, on its **Plugins** page (and `trunk-pro plugin
-> search | install | update`), installs from this registry. It's in the
-> recorder's next release; until then, install a plugin by hand: unpack its
-> release into the plugins folder (below), or add its executable with **Add
-> from a file** on that page.
+The recorder's plugin store, on its **Plugins** page (and `trunk-pro plugin
+search | install | update`), installs from this registry.
 
 The registry is a GitHub repository, [`TrunkRecorder/plugins`](https://github.com/TrunkRecorder/plugins), listing the
 plugins the recorder's plugin store offers. Each entry pins an exact release
@@ -92,8 +89,15 @@ than the one installed. Users update when they choose. Settings carry over.
    it supports the plugin's `api`.
 5. It shows the plugin's settings form, and the user turns it on.
 
-The recorder ships with a copy of the registry, so the store works offline.
-It fetches the latest registry when the store is opened.
+The recorder fetches the registry's list when the store first needs it, and
+then uses that copy for 15 minutes before fetching it again (60 seconds, after
+a fetch that failed). **Check again** on the Plugins page fetches it at once,
+as does each `trunk-pro plugin search | install | update`. So a new entry, once
+merged, shows up in a running recorder within about 15 minutes (GitHub caches
+the file for a few minutes too).
+
+When the registry can't be reached, the recorder uses the list it fetched last,
+and failing that the copy it ships with, so the store works offline.
 
 ## Unlisted plugins
 
