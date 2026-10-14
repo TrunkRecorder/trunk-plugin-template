@@ -67,6 +67,8 @@ Every message has a `type`. The first is always `hello`.
   "config": { "server": "https://api.openmhz.com" },
   "systems": [
     { "index": 0, "short_name": "county", "kind": "p25", "config": { "apiKey": "…" } },
+    { "index": 1, "short_name": "city", "kind": "p25", "config": { "apiKey": "…" },
+      "settings": { "server": "https://openmhz.example.org" } },
     { "index": 65535, "short_name": "conv", "kind": "conventional", "config": null }
   ],
   "capture_dir": "/home/me/TrunkRecorderPro",
@@ -79,6 +81,9 @@ Every message has a `type`. The first is always `hello`.
   `null` when there are none.
 - A system's **`config`** holds the plugin's settings for that system, or is
   `null`.
+- A system's **`settings`**, when it's there, is the plugin's `config` with
+  the changes that system makes to it (another server, say). Without it, the
+  plugin's `config` applies to the system as it is.
 - **`audio_formats`** lists what `call.concluded` will carry: always `wav`,
   plus the formats the plugin asked for that the recorder can make.
 

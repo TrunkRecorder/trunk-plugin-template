@@ -161,6 +161,26 @@ So don't key anything you save on it, such as calls queued for a later run.
 Each conventional system is a system of its own, with its own short name and
 settings.
 
+## Settings a system overrides
+
+A user can change any of your plugin's own settings (`Config`) for one
+system, for example to send its calls to another server. Each system's
+`settings` is your `Config` with that system's changes applied. Read your
+settings from there for anything a system's calls use, and from
+`setup.config` only for what belongs to the whole plugin, like a log file:
+
+```rust
+for s in &setup.systems {
+    let server = s.settings.server.trim();
+    // …
+}
+```
+
+When systems can name different servers, keep a separate queue for each so
+one that's down doesn't hold up the others: start the `CallQueue` with
+`CallQueue::start_by`, giving it a closure that names each call's server
+(its lane). Each lane gets its own workers, retries and endpoint status.
+
 ## Checking settings
 
 The SDK rejects settings that don't parse, such as text where a number goes,

@@ -142,6 +142,20 @@ itself with `host.metrics(&Metrics { … })` every few seconds: any of
 `queued`, `latency_ms`, `bytes_sent`, `endpoints` (each with its state), and
 figures of its own in `extra`, shown as they are.
 
+### One queue for each server
+
+A system can change your plugin's settings for itself, so different systems
+can upload to different servers (see [Settings](settings.md#settings-a-system-overrides)).
+Read the server from `s.settings` for each system. Then start the queue with
+`start_by`, which also takes a closure naming the server each call goes to.
+Each server becomes a lane with its own workers, retries and up/down status,
+named `My Service at <lane>` on the dashboard. A server that's down then
+doesn't hold up uploads to the others:
+
+```rust
+let queue = CallQueue::start_by(host, opts, move |call| lanes.get(&call.call.short_name).cloned().unwrap_or_default(), work);
+```
+
 ## 5. Say what happened: `Attempt`
 
 Your upload function decides what each outcome means:

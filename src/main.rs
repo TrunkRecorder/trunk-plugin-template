@@ -48,9 +48,9 @@ struct SystemConfig {
 struct CallLog {
     host: Host,
     out: BufWriter<File>,
-    include_encrypted: bool,
-    /// Per system, by short name: the label, or None to skip it.
-    labels: Vec<(String, Option<String>)>,
+    /// Per system, by short name: the label (None to skip it), and whether
+    /// its encrypted calls are logged.
+    labels: Vec<(String, Option<String>, bool)>,
 }
 
 impl Plugin for CallLog {
@@ -67,6 +67,7 @@ impl Plugin for CallLog {
     }
 
     fn start(host: Host, setup: Setup<Config, SystemConfig>) -> Result<Self, String> {
+        // There's one log file: the plugin's own setting (`setup.config`).
         let mut path = PathBuf::from(&setup.config.file);
         if path.is_relative() {
             path = setup.data_dir.join(path);
@@ -83,21 +84,22 @@ impl Plugin for CallLog {
                     Some(c) if !c.label.is_empty() => Some(c.label.clone()),
                     _ => Some(s.short_name.clone()),
                 };
-                (s.short_name.clone(), label)
+                // A system can override the plugin's settings: read them from `s.settings`.
+                (s.short_name.clone(), label, s.settings.include_encrypted)
             })
             .collect();
         host.info(format!("logging calls to {}", path.display()));
-        Ok(CallLog { host, out: BufWriter::new(file), include_encrypted: setup.config.include_encrypted, labels })
+        Ok(CallLog { host, out: BufWriter::new(file), labels })
     }
 
     fn call_concluded(&mut self, call: ConcludedCall) {
         // Systems are known by short name: every event carries it.
-        let label = self.labels.iter().find(|(n, _)| *n == call.call.short_name).and_then(|(_, l)| l.clone());
-        let Some(label) = label else {
+        let system = self.labels.iter().find(|(n, ..)| *n == call.call.short_name);
+        let Some((_, Some(label), include_encrypted)) = system.cloned() else {
             self.host.call_result(&call.path, Outcome::Skipped, "system not logged", "");
             return;
         };
-        if call.call.encrypted && !self.include_encrypted {
+        if call.call.encrypted && !include_encrypted {
             self.host.call_result(&call.path, Outcome::Skipped, "encrypted", "");
             return;
         }
