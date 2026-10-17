@@ -9,7 +9,11 @@ There are two kinds of settings:
 - **`Config`**: settings for the plugin as a whole, like a server URL.
 - **`SystemConfig`**: settings the form repeats for each system being
   recorded, like an API key per system. Many services give each system its own
-  key, so uploaders need this.
+  key, so uploaders need this. A system's sites share them; for a service that
+  knows a site as a system of its own, add a list of sites with what differs
+  (the [Broadcastify](https://github.com/TrunkRecorder/trunk-plugin-broadcastify)
+  and [OpenMHz](https://github.com/TrunkRecorder/trunk-plugin-openmhz) plugins'
+  **Sites of their own**) and pick by the call's `site`.
 
 Use `NoConfig` for either if you don't need it.
 

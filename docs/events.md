@@ -28,7 +28,7 @@ uploaders and archivers.
   "path": "county/2026/9/30/101-1790771550_857587500",
   "system": 0,
   "call": {
-    "call_num": 412, "short_name": "county", "talkgroup": 101,
+    "call_num": 412, "short_name": "county", "site": "county", "talkgroup": 101,
     "talkgroup_tag": "Fire Dispatch", "talkgroup_description": "", "talkgroup_group": "Fire", "talkgroup_group_tag": "Fire Dispatch",
     "freq": 857587500, "start_time": 1790771550, "stop_time": 1790771554, "call_length": 4,
     "emergency": 0, "encrypted": 0, "priority": 0, "phase2_tdma": 0, "tdma_slot": 0, "audio_type": "digital",
@@ -64,6 +64,12 @@ uploaders and archivers.
 Only recorded calls conclude. Calls the recorder skipped (encrypted, no free
 recorder, an unknown talkgroup when those aren't recorded) have no files.
 
+A system can have several sites, each a control channel the recorder follows.
+A call heard on more than one is one call, saved once from the site that heard
+it best: `short_name` is the system, and **`site`** is the site the call was
+kept from (a system of one site: its short name; none for a conventional
+channel's call).
+
 ## `call.start` and `call.end`
 
 A call started, or ended. Unlike `call.concluded`, these cover calls that
@@ -73,7 +79,7 @@ it was recorded, come later in `call.concluded`.
 ```json
 {
   "type": "call.start",
-  "id": 412, "system": 0, "short_name": "county",
+  "id": 412, "system": 0, "short_name": "county", "site": "county",
   "talkgroup": 101, "talkgroup_tag": "Fire Dispatch",
   "freq_hz": 857587500, "tdma_slot": null,
   "analog": false, "encrypted": false, "emergency": false,
@@ -85,7 +91,10 @@ it was recorded, come later in `call.concluded`.
 ```
 
 - **`id`** is unique while the recorder runs. It's the same number as
-  `call_num` in the concluded call.
+  `call_num` in the concluded call, except for a call heard on several sites:
+  it starts and ends once, as its first site's copy (`site`), and the copy
+  that concludes may be another site's, with another number. Match those by
+  system, talkgroup and time if you need to.
 - **`recording`**: `false` means the call isn't recorded, and **`reason`**
   says why: `encrypted`, `unknown_tg` (not in the talkgroup list, and unknown
   talkgroups aren't recorded), `no_recorder` (all in use) or `no_source` (no
@@ -99,7 +108,7 @@ it was recorded, come later in `call.concluded`.
 A radio did something on the control channel.
 
 ```json
-{ "type": "unit", "system": 0, "short_name": "county", "kind": "affiliation", "unit": 1116707, "talkgroup": 101, "time": 1790771551.4 }
+{ "type": "unit", "system": 0, "short_name": "county", "site": "county", "kind": "affiliation", "unit": 1116707, "talkgroup": 101, "time": 1790771551.4 }
 ```
 
 `kind` is one of:
@@ -128,19 +137,24 @@ little-endian, base64-encoded. `chunk.samples()` decodes it.
 
 Chunks of one call come in order. Chunks of different calls are interleaved.
 Use `call_id` to tell them apart, and `call.start` / `call.end` (subscribe to
-them too) to know when a call's audio begins and ends.
+them too) to know when a call's audio begins and ends. A call heard on several
+sites plays from whichever site's copy has it at the moment, so a chunk can
+carry the `call_id` of a copy that had no `call.start`: it is the call of the
+same system and talkgroup that did.
 
 This topic is busy. Hand the audio to your own thread straight away.
 
 ## `status`
 
-Every system's state, every 5 seconds.
+Every system's state, every 5 seconds: an entry for each site, so a system of
+several sites has several, with the same `index` and `short_name` and its own
+`site_name`.
 
 ```json
 {
   "type": "status", "time": 1790771560.0,
   "systems": [
-    { "index": 0, "short_name": "county", "control_channel_hz": 851012500, "decode_rate": 38.5, "active_calls": 3, "recording": 2 }
+    { "index": 0, "short_name": "county", "site_name": "county", "control_channel_hz": 851012500, "decode_rate": 38.5, "active_calls": 3, "recording": 2 }
   ]
 }
 ```

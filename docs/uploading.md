@@ -12,7 +12,8 @@ complete example, about 250 lines with its tests. Read it alongside.
 ## 1. Settings
 
 Services usually give each system its own key, so the key goes in
-`SystemConfig`. The server goes in `Config`, with the real service as the
+`SystemConfig` (a system's sites share it; see [Settings](settings.md) for a
+site a service knows on its own). The server goes in `Config`, with the real service as the
 default:
 
 ```rust
