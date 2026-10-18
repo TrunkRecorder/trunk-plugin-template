@@ -163,7 +163,10 @@ So don't key anything you save on it, such as calls queued for a later run.
 `setup.system_named(name)` finds a system by short name.
 
 Each conventional system is a system of its own, with its own short name and
-settings.
+settings. Systems are numbered from 0, trunked first, then conventional; tell
+a conventional one by its `kind` (`"conventional"`), not by its number. (Before
+Trunk Recorder Pro v0.1.16, conventional systems were numbered down from 65535
+and the SDK had a `CONVENTIONAL` constant; SDK 0.5.0 drops it.)
 
 ## Settings a system overrides
 

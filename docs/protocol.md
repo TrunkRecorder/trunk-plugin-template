@@ -69,7 +69,7 @@ Every message has a `type`. The first is always `hello`.
     { "index": 0, "short_name": "county", "kind": "p25", "config": { "apiKey": "…" } },
     { "index": 1, "short_name": "city", "kind": "p25", "config": { "apiKey": "…" },
       "settings": { "server": "https://openmhz.example.org" } },
-    { "index": 65535, "short_name": "conv", "kind": "conventional", "config": null }
+    { "index": 2, "short_name": "conv", "kind": "conventional", "config": null }
   ],
   "capture_dir": "/home/me/TrunkRecorderPro",
   "data_dir": "/home/me/.config/trunk-pro/plugin-data/openmhz",
