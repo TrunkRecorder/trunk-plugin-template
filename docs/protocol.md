@@ -46,10 +46,13 @@ JSON object on stdout and exits 0:
 | `id` | yes | `[a-z0-9][a-z0-9-]*` |
 | `name`, `version`, `description` | yes | |
 | `api` | yes | The plugin API version it speaks. The recorder refuses a higher one than it knows. |
-| `subscribe` | yes | Topics: `call.start`, `call.end`, `call.concluded`, `unit`, `audio`, `status`. |
+| `subscribe` | yes | Topics: `call.start`, `call.end`, `call.concluded`, `unit`, `audio`, `status`, `tone_pattern`. |
 | `audio_formats` | no | `["m4a"]` to get M4A with `call.concluded`. |
 | `config`, `system_config` | no | [Settings schemas](#settings-schemas). Leave them out for none. |
 | `homepage`, `repository`, `authors`, `license` | no | |
+| `page` | no | `{ "title": "…" }`: a page of its own in the recorder's navigation, for settings too many for its card |
+| `contribute` | no | Buttons elsewhere in the interface: `[{ "on": "signal", "label", "hint", "append", "item" }]` adds `item` to the settings list `append` from each of a system's signals |
+| `live_settings` | no | `true`: it takes new settings as it runs (`settings`, below) instead of being restarted |
 
 It must finish within 10 seconds.
 
@@ -63,7 +66,7 @@ Every message has a `type`. The first is always `hello`.
 {
   "type": "hello",
   "api": 1,
-  "host": { "name": "trunk-pro", "version": "0.4.0" },
+  "host": { "name": "trunk-pro", "version": "0.2.10" },
   "config": { "server": "https://api.openmhz.com" },
   "systems": [
     { "index": 0, "short_name": "county", "kind": "p25", "config": { "apiKey": "…" } },
@@ -93,8 +96,27 @@ settings, it sends a `status` of `error` saying why, and exits with status
 
 ### Events
 
-`call.concluded`, `call.start`, `call.end`, `unit`, `audio` and `status`. Each
-message is the event's fields plus `type`. See [Events](events.md).
+`call.concluded`, `call.start`, `call.end`, `unit`, `audio`, `status` and
+`tone_pattern`. Each message is the event's fields plus `type`. See
+[Events](events.md).
+
+### `action`
+
+```json
+{ "type": "action", "request": 7, "action": "test", "value": { "name": "Discord", "url": "…" } }
+```
+
+Someone pressed one of the plugin's buttons (`x-actions` in its settings
+schema). `value` is the settings object the button is on, as edited (saved or
+not). Answer with `action.result` and the same `request` within 15 seconds;
+the answer is shown by the button, in the browser that pressed it.
+
+### `settings`
+
+The plugin's settings changed while it runs: the `hello` it would start with
+now, with `"type": "settings"`. Only a plugin with `live_settings` is sent
+one; others are restarted. A plugin that can't take them reports an `error`
+status and keeps the ones it had.
 
 ### `shutdown`
 
@@ -142,6 +164,14 @@ next status.
 (not handled, on purpose) or `failed` (given up on). `message` and `url` are
 optional.
 
+### `action.result`
+
+```json
+{ "type": "action.result", "request": 7, "ok": true, "message": "Sent a test to Discord" }
+```
+
+The answer to an `action`, with its `request`.
+
 A line that isn't JSON is logged as it is.
 
 ## Exit status
@@ -176,6 +206,7 @@ objects. The recorder's settings form understands this subset:
 | `{"type": "array", "items": {"type": "string"}}` (or number) | List |
 | `{"type": "array", "items": {"type": "object", …}}` | A list of groups, added and removed one by one |
 | `{"type": "string", "x-system": true}` | Menu of the recorder's systems (short names); follows renames |
+| `x-systems`, `x-signals`, `x-ref`, `x-tones`, `x-title`, `x-summary`, `x-when`, `x-actions` | Systems or signals to tick, items of another list, tones typed in, list items titled and summed up, fields shown only when they apply, buttons: see [the recorder's guide](https://github.com/TrunkRecorder/trunk-recorder-pro/blob/main/docs/plugins/writing-plugins.md#settings-and-the-form) |
 
 On any field: `title` (the label; the key if there's none), `description`
 (help text), `default`.

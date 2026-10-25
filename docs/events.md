@@ -12,6 +12,7 @@ you don't use costs everyone something.
 | `unit` | `unit` | A radio registers, affiliates, … | Busy systems: many per second |
 | `audio` | `audio` | Live audio of recording calls | About 50 per second per call |
 | `status` | `status` | Every system's state | Every 5 seconds |
+| `tone_pattern` | `tone_pattern` | A call's tones made a pattern: a page, an alert tone, a DTMF or KNOX string, a Morse ID | As heard |
 
 The examples below are the JSON on the wire. The Rust SDK hands you the same
 data as structs; the field names match. Times are Unix seconds. Frequencies
@@ -65,10 +66,13 @@ Only recorded calls conclude. Calls the recorder skipped (encrypted, no free
 recorder, an unknown talkgroup when those aren't recorded) have no files.
 
 A system can have several sites, each a control channel the recorder follows.
-A call heard on more than one is one call, saved once from the site that heard
-it best: `short_name` is the system, and **`site`** is the site the call was
-kept from (a system of one site: its short name; none for a conventional
-channel's call).
+A call heard on more than one is recorded on each and the best copy saved:
+`short_name` is the system, and **`site`** is the site the call was kept from
+(a system of one site: its short name; none for a conventional channel's call).
+A copy the saved one doesn't hold all of is saved too (better a duplicate than
+a transmission lost), and copies of one transmission share
+**`transmission_id`**. A system with `conversationMode` off makes each
+transmission a call of its own.
 
 ## `call.start` and `call.end`
 
@@ -100,6 +104,8 @@ it was recorded, come later in `call.concluded`.
   talkgroups aren't recorded), `no_recorder` (all in use) or `no_source` (no
   radio covers its frequency). More reasons may be added.
 - **`units`**: radios heard on the call so far. At `call.end`, all of them.
+  **`sources`** has the same radios with each one's name (`tag`, as the call
+  JSON's `srcList` has it) and what its transmission said of itself.
 - **`patched_talkgroups`**: the talkgroups patched with this one so far, its
   own included, ascending; empty when it isn't patched.
 
@@ -108,8 +114,11 @@ it was recorded, come later in `call.concluded`.
 A radio did something on the control channel.
 
 ```json
-{ "type": "unit", "system": 0, "short_name": "county", "site": "county", "kind": "affiliation", "unit": 1116707, "talkgroup": 101, "time": 1790771551.4 }
+{ "type": "unit", "system": 0, "short_name": "county", "site": "county", "kind": "affiliation", "unit": 1116707, "tag": "Engine 12", "talkgroup": 101, "alpha_tag": "Fire Dispatch", "time": 1790771551.4 }
 ```
+
+`tag` is the radio's name and `alpha_tag` the talkgroup's, looked up as the
+event is sent (left out when there's none).
 
 `kind` is one of:
 
@@ -163,6 +172,27 @@ several sites has several, with the same `index` and `short_name` and its own
   control channel.
 - **`decode_rate`** is control channel messages decoded per second. A healthy
   P25 control channel gives about 40.
+
+## `tone_pattern`
+
+A call's in-band tones made a pattern, as the call JSON's `tone_patterns` will
+list it.
+
+```json
+{
+  "type": "tone_pattern", "short_name": "county", "site": "county", "call_num": 412,
+  "talkgroup": 101, "alpha_tag": "Fire Dispatch", "src_tag": "Station 1", "time": 1790771552.0,
+  "pattern": { "pattern": "two_tone", "tones": [849.63, 1292.85], "lengths": [1.0, 3.04],
+               "format": "Quick Call II", "pos": 0.4, "len": 4.04, "src": 1116707, "origin": "frame",
+               "text": "two-tone 849.63 → 1292.85 Hz, 1 + 3.04 s (Quick Call II)", "signals": ["FD_PAGE"] }
+}
+```
+
+`pattern` is `two_tone` (a page), `long`, `hi_low` (a warble), `pulsed`,
+`digits` (DTMF; `knox: true` for KNOX), `morse`, `sequence` or `beep`.
+`signals` names the system's signals it matches. `decrypted` is set when it was
+heard in voice decrypted with the system's keys (only plugins allowed decrypted
+calls get those).
 
 ## Order and loss
 

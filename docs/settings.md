@@ -83,6 +83,12 @@ for programmers, and isn't shown.
 | `Vec` of a struct | A list of groups, with Add and Remove buttons. The struct's doc comment names each one ("Stream 1", "Add stream"). |
 | `String` with `#[schemars(extend("x-system" = true))]` | Menu of the recorder's systems, by short name. When a system is renamed, the recorder changes the setting to match. |
 
+More hints for bigger forms (systems or signals to tick, a list naming another
+list's items, typed-in tones, list items titled and summed up, fields shown
+only when they apply, buttons): `x-systems`, `x-signals`, `x-ref`, `x-tones`,
+`x-title`, `x-summary`, `x-when`, `x-actions`, in [the recorder's
+guide](https://github.com/TrunkRecorder/trunk-recorder-pro/blob/main/docs/plugins/writing-plugins.md#settings-and-the-form).
+
 Fields appear in the order you declare them.
 
 ### Fields that have to be filled in
