@@ -118,6 +118,11 @@ cheap to clone and works from any thread.
 | `host.info(…)`, `warn`, `error`, `debug` | In the recorder's log, prefixed with the plugin's id. `debug` lines are dropped. |
 | `host.status(State::Warning, "OpenMHz is down; 12 calls queued")` | Next to the plugin in the plugins list, until the next status. |
 | `host.call_result(path, Outcome::Ok, "", url)` | What became of a call: `Ok`, `Skipped` (deliberately not handled) or `Failed`. |
+| `reply.ok("Sent")`, `reply.fail(why)` | The answer to one of its buttons: `Plugin::action(a, reply)` gets a `Reply` to answer with, now or later from another thread. Dropped unanswered, it says the plugin didn't answer. |
+
+A plugin with `live_settings` in its manifest gets new settings through
+`Plugin::settings(setup)` while it runs; returning `Err` keeps the ones it had
+and shows why.
 
 > **Never print to stdout.** A plugin's stdout carries the protocol, so
 > `println!` sends garbage to the recorder. The recorder logs a line it can't
