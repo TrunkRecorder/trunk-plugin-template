@@ -1,5 +1,5 @@
 /target
 /dist
-# Developing against a local checkout of the SDK (see docs/testing.md).
+# Developing against a local checkout of the SDK (see https://github.com/TrunkRecorder/trunk-recorder-pro/blob/main/docs/plugins/writing-plugins.md#against-an-unreleased-sdk).
 /.cargo/config.toml
 .DS_Store
