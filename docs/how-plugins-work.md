@@ -43,18 +43,20 @@ close stdin                                exits
    plugin needs a newer plugin API than the recorder has, it isn't started.
 2. **Start.** The recorder starts the plugin with no arguments, in its data
    folder, and sends a `hello`: the plugin's settings, the systems being
-   recorded, the capture folder, the plugin's data folder, and the audio formats
-   calls will come with. The SDK parses the settings into your `Config` types
-   and calls `Plugin::start`.
+   recorded that it's on for (each with its permanent id, its sites and your
+   settings for it), the capture folder, the plugin's data folder, and the
+   audio formats calls will come with. The SDK parses the settings into your
+   `Config` types and calls `Plugin::start`.
 3. **Ready.** If `start` returns `Ok`, the SDK sends `ready`, and the recorder
    shows the plugin as running. If it returns `Err`, the SDK reports the error
    and exits with status 78, which tells the recorder the settings are wrong.
    The recorder doesn't restart the plugin while it keeps recording; it tries
-   again the next time recording starts (after the user has fixed the settings,
-   or installed what was missing).
+   again when its settings change or recording next starts (after the user has
+   fixed the settings, or installed what was missing).
 4. **Events.** The SDK calls your method for each event, one at a time, in
    order.
-5. **Shutdown.** When recording stops, the recorder sends `shutdown` and closes
+5. **Shutdown.** When recording stops, or the plugin's settings change and it
+   doesn't take them as it runs, the recorder sends `shutdown` and closes
    stdin. The SDK calls `Plugin::shutdown(grace)`, and the process exits when
    it returns. Anything still running after the grace period (10 seconds) is
    killed.
@@ -87,13 +89,16 @@ fn manifest() -> Manifest {
 | `subscribe` | The [topics](events.md) to receive. Nothing else is sent. The recorder doesn't even build events nobody subscribes to, so subscribe only to what you use. |
 | `audio_formats` | Extra formats for `call.concluded`: `["m4a"]`. See [Audio](audio.md). |
 | `config`, `system_config` | Filled in by the SDK from your `Config` and `SystemConfig` types. See [Settings](settings.md). |
+| `system_overrides`, `site_overrides` | The settings a system may set again for itself (from `Config`), and a site (from `SystemConfig`). None by default. See [Settings](settings.md#settings-a-system-overrides). |
+| `live_settings`, `page`, `contribute` | It takes new settings while it runs; a page of its own; buttons elsewhere in the interface. See [Protocol](protocol.md#--describe). |
 
 ## One thread: return quickly
 
 Your event methods run on the thread that reads stdin, one event at a time.
 While a method runs, the next events wait in the plugin's queue. The queue
-holds about a thousand. If it fills up, the recorder drops events for that
-plugin and logs that it's falling behind.
+holds 1024. If it fills up, the recorder drops events for that plugin and logs
+that it's falling behind. It keeps calls' starts and ends, and answers to what
+the plugin asked, to send once there's room.
 
 So an event method should return in milliseconds. Hand anything slower to
 another thread: network requests, spawning programs, big file copies.
@@ -117,12 +122,15 @@ cheap to clone and works from any thread.
 |---|---|
 | `host.info(…)`, `warn`, `error`, `debug` | In the recorder's log, prefixed with the plugin's id. `debug` lines are dropped. |
 | `host.status(State::Warning, "OpenMHz is down; 12 calls queued")` | Next to the plugin in the plugins list, until the next status. |
-| `host.call_result(path, Outcome::Ok, "", url)` | What became of a call: `Ok`, `Skipped` (deliberately not handled) or `Failed`. |
+| `host.call_result(path, Outcome::Ok, "", url)` | What became of a call: `Ok`, `Skipped` (deliberately not handled) or `Failed`. `call_result_took` also says how long your work on it took, so the dashboard can tell uploading from waiting. |
+| `host.metrics(&Metrics { … })` | On the dashboard: queue depth, timing, bytes sent, the services it talks to. `CallQueue` sends these for you. |
+| `host.calls(CallsQuery { … })` | Asks for recorded calls (a talkgroup's last week, say). The page comes to `Plugin::calls` with the request number it returns. |
+| `host.save_settings(&value)` | Saves some of its own settings, as if typed in on its form (a name it looked up). The answer comes to `Plugin::settings_saved`. Only for a plugin with `live_settings`. |
 | `reply.ok("Sent")`, `reply.fail(why)` | The answer to one of its buttons: `Plugin::action(a, reply)` gets a `Reply` to answer with, now or later from another thread. Dropped unanswered, it says the plugin didn't answer. |
 
 A plugin with `live_settings` in its manifest gets new settings through
 `Plugin::settings(setup)` while it runs; returning `Err` keeps the ones it had
-and shows why.
+and shows why. See [Protocol](protocol.md) for what each message carries.
 
 > **Never print to stdout.** A plugin's stdout carries the protocol, so
 > `println!` sends garbage to the recorder. The recorder logs a line it can't
@@ -133,9 +141,10 @@ and shows why.
 
 | What happens | What the recorder does |
 |---|---|
-| `start` returns `Err` (exit status 78) | Shows the error. Doesn't restart the plugin until recording next starts. |
+| `start` returns `Err` (exit status 78) | Shows the error. Doesn't restart the plugin until its settings change or recording next starts. |
 | The plugin panics or exits | Logs it and restarts it after 1 s, then 2 s, 4 s, … up to a minute between tries. The delay resets once the plugin has run for a minute. Events wait in the queue meanwhile. |
-| The plugin falls behind | Drops that plugin's events once its queue is full, and logs how many. |
+| The plugin falls behind | Drops that plugin's events once its queue is full (but not calls' starts and ends), and logs how many. |
+
 | `--describe` fails or prints nonsense | Doesn't start the plugin, and says why. |
 | It's still running after the shutdown grace period | Kills it. |
 
@@ -144,7 +153,9 @@ and shows why.
 - **Data folder** (`setup.data_dir`): the plugin's own, kept across restarts and
   upgrades. Put queues, state and caches here. The process starts with this
   folder as its working directory.
-- **Capture folder** (`setup.capture_dir`): where the recorder keeps calls.
+- **Capture folder** (`setup.capture_dir`): where the recorder keeps calls,
+  always a full path, as are the paths in each call's `files`.
+
   Read the files events point to, but don't change or delete them. Other
   plugins, and the recorder's call history, use them too.
 

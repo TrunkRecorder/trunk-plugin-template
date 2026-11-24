@@ -12,9 +12,10 @@ complete example, about 250 lines with its tests. Read it alongside.
 ## 1. Settings
 
 Services usually give each system its own key, so the key goes in
-`SystemConfig` (a system's sites share it; see [Settings](settings.md) for a
-site a service knows on its own). The server goes in `Config`, with the real service as the
-default:
+`SystemConfig` (a system's sites share it; see
+[Settings for each site](settings.md#settings-for-each-site) for a site a
+service knows on its own). The server goes in `Config`, with the real service
+as the default:
 
 ```rust
 #[derive(Serialize, Deserialize, JsonSchema)]
@@ -72,7 +73,7 @@ fn start(host: Host, setup: Setup<Config, SystemConfig>) -> Result<Self, String>
         let Some(c) = &s.config else { continue };
         if !c.api_key.trim().is_empty() {
             host.info(format!("uploading {} (key …{})", s.short_name, last2(&c.api_key)));
-            keys.insert(s.short_name.clone(), c.api_key.trim().to_string());
+            keys.insert(s.id, c.api_key.trim().to_string());
         }
     }
     if keys.is_empty() {
@@ -94,7 +95,8 @@ to return in milliseconds (see
 `CallQueue` does the rest:
 
 - It works calls on background threads (2 by default).
-- It retries failures after 10 s, 1 min, 5 min and 15 min, then gives up.
+- It retries failures after 10 s, 1 min, 5 min and 15 min, then gives up. A
+  service that says how long to wait (`Retry-After`) isn't tried again sooner.
 - It shows a warning status while calls wait to retry, and clears it when
   they're through.
 - It reports each call's result for you.
@@ -115,10 +117,13 @@ struct MyUploader {
 // in start:
 let opts = QueueOptions { noun: "upload", endpoint: Some("My Service".into()), ..QueueOptions::saved_in(&setup.data_dir) };
 let queue = CallQueue::start(host, opts, move |call: &ConcludedCall| {
-    // By short name: a call saved for the next run still finds its system.
-    let Some(key) = keys.get(&call.call.short_name) else {
+    // By id: a call saved for the next run still finds its system, renamed or not.
+    let Some(key) = keys.get(&call.call.system_id) else {
         return Attempt::Skip("no API key for this system".into());
     };
+    if !call.call.has_audio() {
+        return Attempt::Skip("no audio".into());
+    }
     let Some(m4a) = &call.files.m4a else {
         return Attempt::Fail("this call couldn't be encoded as M4A".into());
     };
@@ -145,17 +150,40 @@ figures of its own in `extra`, shown as they are.
 
 ### One queue for each server
 
-A system can change your plugin's settings for itself, so different systems
-can upload to different servers (see [Settings](settings.md#settings-a-system-overrides)).
-Read the server from `s.settings` for each system. Then start the queue with
-`start_by`, which also takes a closure naming the server each call goes to.
+When you let a system set the server again for itself (`system_overrides`),
+different systems can upload to different servers (see
+[Settings](settings.md#settings-a-system-overrides)). Read the server from
+`s.settings` for each system. Then start the queue with `start_by`, which also
+takes a closure naming the server each call goes to.
 Each server becomes a lane with its own workers, retries and up/down status,
 named `My Service at <lane>` on the dashboard. A server that's down then
 doesn't hold up uploads to the others:
 
 ```rust
-let queue = CallQueue::start_by(host, opts, move |call| lanes.get(&call.call.short_name).cloned().unwrap_or_default(), work);
+let queue = CallQueue::start_by(host, opts, move |call| lanes.get(&call.call.system_id).cloned().unwrap_or_default(), work);
 ```
+
+### A call for several places
+
+With [settings for each site](settings.md#settings-for-each-site), one call
+can go to more than one account: `system.targets(&call.call)` lists them.
+Try each, and make one outcome of the tries with `Attempt::together`: tried
+again if any should be (waiting the longest any service asked), else failed if
+any failed, else done if any took it, else skipped.
+
+```rust
+// In the work function, with the setup's systems moved into it:
+let Some(system) = systems.iter().find(|s| s.id == call.call.system_id) else {
+    return Attempt::Skip("not a system this plugin is set up for".into());
+};
+let tries = system.targets(&call.call).into_iter().map(|t| upload(&server, &t.config.api_key, &call.call, m4a));
+Attempt::together(tries)
+```
+
+With no targets (no settings for any site that heard it), `together` is a
+skip. A retry tries every place again, so a place that took the call the
+first time has to take it again harmlessly, or your plugin has to remember
+which places it sent it to.
 
 ## 5. Say what happened: `Attempt`
 
@@ -165,19 +193,27 @@ Your upload function decides what each outcome means:
 |---|---|---|
 | `Attempt::Done { url }` | It worked. `url` links to the call on the service, if there's one (or `String::new()`). | Reported `ok`. |
 | `Attempt::Skip(why)` | Not for this plugin: a system without a key, a talkgroup the service ignores. | Reported `skipped`. |
-| `Attempt::Retry(why)` | It might work later: no network, a timeout, a 5xx, a 429. | Retried; `failed` after the last retry. |
+| `Attempt::Retry(why)` | It might work later: no network, a timeout, a 5xx. | Retried; `failed` after the last retry. |
+| `Attempt::Wait(why, wait)` | The service is busy and said how long to wait (a 429 or 503 with `Retry-After`). | Retried no sooner than `wait` (at most an hour). |
 | `Attempt::Fail(why)` | It won't work: a wrong key, an unknown system, a file it refuses. | Reported `failed`, now. |
 
 Getting this right is most of what makes an uploader good. Retrying a wrong
 key an hour later helps nobody. Failing a call because of a moment's network
 trouble loses it.
 
-Services often say what's wrong in the response body, not the status code.
-OpenMHz answers most refusals with a 500 and a message. Read the service's
-source or docs, and match its messages:
+`Attempt::from_status(status, retry_after, why)` reads an HTTP answer's
+status the way every plugin should: `2xx` done, `429`/`503` waited on (as long
+as `Retry-After` says) or retried, `408` and other `5xx` retried, any other
+`4xx` failed. (`http::Failure::from_status` is the same reading, for
+something other than a call.)
+
+But services often say what's wrong in the response body, not the status
+code. OpenMHz answers most refusals with a 500 and a message. Read the
+service's source or docs, match its messages, and leave the rest to
+`from_status`:
 
 ```rust
-fn outcome(status: u16, text: &str) -> Attempt {
+fn outcome(status: u16, retry_after: Option<&str>, text: &str) -> Attempt {
     if status == 200 {
         return Attempt::Done { url: String::new() };
     }
@@ -187,10 +223,7 @@ fn outcome(status: u16, text: &str) -> Attempt {
     if text.contains("Talkgroup does not exist") {
         return Attempt::Skip("OpenMHz ignores talkgroups it doesn't know".into());
     }
-    match status {
-        400..=499 if status != 408 && status != 429 => Attempt::Fail(format!("HTTP {status}")),
-        _ => Attempt::Retry(format!("HTTP {status}: {}", text.trim())),
-    }
+    Attempt::from_status(status, retry_after, format!("HTTP {status}: {}", text.trim()))
 }
 ```
 
@@ -247,9 +280,12 @@ it. The call's JSON (`call.call`) has Trunk Recorder's field names, and the
 SDK sums what TR's uploaders summed: `error_count()`, `spike_count()`. Name
 your settings so TR's can be pasted in: `#[serde(alias = "apiKey")]`.
 
-TR's uploaders take talkgroup allow and deny lists of glob patterns
-(`"507*"`, `"12?45"`). The SDK's `TalkgroupFilter` matches them the same way,
-and `filter::patterns` reads a list that mixes numbers and strings:
+For a service's talkgroups, the SDK's `Talkgroups` gives each system the
+recorder's own **Talkgroups** menu (see
+[Settings](settings.md#choosing-talkgroups)). TR's uploaders took talkgroup
+allow and deny lists of glob patterns (`"507*"`, `"12?45"`) instead. The SDK's
+`TalkgroupFilter` matches them the same way (and ranges, `"1000-1099"`), and
+`filter::patterns` reads a list that mixes numbers and strings:
 
 ```rust
 #[serde(deserialize_with = "trunk_recorder_plugin::filter::patterns")]
@@ -275,3 +311,20 @@ if !filter.passes(call.call.talkgroup) {
 
 Then run it against a stand-in on your computer with
 `trunk-pro plugin run`, and inside the recorder, before you release.
+
+## Node health reports
+
+A service that collects calls can also want to know how well each node hears
+what it uploads. Subscribe to `totals` (see [Events](events.md#totals)), and
+the SDK's `health` module makes the reports: keep each `totals` message in a
+`health::History`, and a `health::Reporter` for each node you report on. The
+reporter says when its next report is due (at a random point in each
+interval, so a service's nodes don't all report at once) and makes it from the
+totals since its last delivered one. Tell it how each send went with
+`delivered` or `failed` (an `http::Failure`); a failed report's window goes
+with the next. `health::Recorder::of(&setup.host)` names the recorder as the
+report has it. The report's format is in the recorder's
+[node health spec](https://github.com/TrunkRecorder/trunk-recorder-pro/blob/main/docs/api/node-health.md);
+the [Broadcastify plugin](https://github.com/TrunkRecorder/trunk-plugin-broadcastify)
+sends them.
+

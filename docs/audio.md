@@ -1,7 +1,8 @@
 # Audio
 
-Every recorded call is a **WAV** file: 16-bit mono, 8 kHz. That's what the
-recorder decodes, so it's lossless, and it's always there.
+Every recorded call is decoded as **WAV**: 16-bit mono, 8 kHz, lossless.
+`call.concluded` always gives its path in `files.wav`, and a call without an
+M4A always has the file.
 
 Many services want **M4A** (AAC audio in an MP4 file) instead, which is about
 a tenth of the size. OpenMHz and Broadcastify Calls both do.
@@ -22,6 +23,11 @@ The recorder then encodes each call once, whichever and however many plugins
 asked, and puts the file next to the WAV. `call.concluded` gives its path in
 `files.m4a`. Encoding happens off the recorder's main thread, so M4A calls
 reach you a moment later than WAV-only calls would.
+
+When a call comes with an M4A, its WAV may not have been written: the
+recorder writes it then only when the user keeps WAVs, or a plugin asks for it
+too. Use the M4A. A plugin that needs both lists both:
+`audio_formats: vec![format::M4A.into(), format::WAV.into()]`.
 
 ## M4A might not be there
 
@@ -91,4 +97,7 @@ folder or a temporary file.
 
 Plugins that stream live audio subscribe to the `audio` topic instead. It's
 raw PCM (see [Events](events.md#audio)); encoding it for a stream is up to the
-plugin.
+plugin. The `voice` topic has the same digital voice as the vocoder frames it
+was decoded from (see [Events](events.md#voice)). Neither goes to a plugin the
+user delays calls for.
+

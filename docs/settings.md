@@ -9,11 +9,9 @@ There are two kinds of settings:
 - **`Config`**: settings for the plugin as a whole, like a server URL.
 - **`SystemConfig`**: settings the form repeats for each system being
   recorded, like an API key per system. Many services give each system its own
-  key, so uploaders need this. A system's sites share them; for a service that
-  knows a site as a system of its own, add a list of sites with what differs
-  (the [Broadcastify](https://github.com/TrunkRecorder/trunk-plugin-broadcastify)
-  and [OpenMHz](https://github.com/TrunkRecorder/trunk-plugin-openmhz) plugins'
-  **Sites of their own**) and pick by the call's `site`.
+  key, so uploaders need this. A system's sites share them, unless you let a
+  site set some of them again for itself (see
+  [Settings for each site](#settings-for-each-site)).
 
 Use `NoConfig` for either if you don't need it.
 
@@ -83,10 +81,12 @@ for programmers, and isn't shown.
 | `Vec` of a struct | A list of groups, with Add and Remove buttons. The struct's doc comment names each one ("Stream 1", "Add stream"). |
 | `String` with `#[schemars(extend("x-system" = true))]` | Menu of the recorder's systems, by short name. When a system is renamed, the recorder changes the setting to match. |
 
-More hints for bigger forms (systems or signals to tick, a list naming another
-list's items, typed-in tones, list items titled and summed up, fields shown
-only when they apply, buttons): `x-systems`, `x-signals`, `x-ref`, `x-tones`,
-`x-title`, `x-summary`, `x-when`, `x-actions`, in [the recorder's
+More hints for bigger forms (systems or signals to tick, talkgroups typed in
+and checked, a list naming another list's items, typed-in tones, list items
+titled and summed up, fields shown only when they apply, buttons, sliders,
+fields the plugin fills in itself): `x-systems`, `x-signals`, `x-talkgroups`,
+`x-ref`, `x-tones`, `x-title`, `x-summary`, `x-when`, `x-actions`,
+`x-slider`, `x-open`, `readOnly`, in [the recorder's
 guide](https://github.com/TrunkRecorder/trunk-recorder-pro/blob/main/docs/plugins/writing-plugins.md#settings-and-the-form).
 
 Fields appear in the order you declare them.
@@ -146,27 +146,33 @@ struct SystemConfig {
 }
 ```
 
-In `start`, `setup.systems` lists every system, each with its short name,
-kind (`p25`, `smartnet`, `dmr` or `conventional`), and your `SystemConfig`.
-The config is `None` when the user left that system's settings empty.
+In `start`, `setup.systems` lists every system your plugin is on for, each
+with its `id`, short name, kind (`p25`, `smartnet`, `dmr`, `nxdn`, `edacs` or
+`conventional`), its `sites`, and your `SystemConfig`. The config is `None`
+when the user left that system's settings empty. A system's `name` (what
+people call it) and its FCC licenses (`fcc`, `fcc_call_sign`, `fcc_name`) are
+there when known, which often they aren't.
 
-A system's **short name** is its identity: no two of the recorder's systems
-share one, and every event carries it (`call.short_name`; a concluded call's
-`call.call.short_name`). Build your lookup in `start` by short name:
+A system's **`id`** is its identity: the same across runs and renames, never
+another system's, and every event carries it (`system_id`; a concluded call's
+`call.call.system_id`). Build your lookup in `start` by id:
 
 ```rust
-let keys: HashMap<String, String> = setup
+let keys: HashMap<u32, String> = setup
     .systems
     .iter()
-    .filter_map(|s| Some((s.short_name.clone(), s.config.as_ref()?.api_key.clone())))
+    .filter_map(|s| Some((s.id, s.config.as_ref()?.api_key.clone())))
     .filter(|(_, k)| !k.is_empty())
     .collect();
 ```
 
+The **short name** is what users know a system by: unique among the
+recorder's systems, and what to show in logs and messages. It changes when the
+system is renamed. `setup.system_named(name)` finds a system by it.
+
 Each system also has an `index`, the number events carry as `system`. It is
 only good for this run: the same system can have another number next time.
 So don't key anything you save on it, such as calls queued for a later run.
-`setup.system_named(name)` finds a system by short name.
 
 Each conventional system is a system of its own, with its own short name and
 settings. Systems are numbered from 0, trunked first, then conventional; tell
@@ -176,11 +182,25 @@ and the SDK had a `CONVENTIONAL` constant; SDK 0.5.0 drops it.)
 
 ## Settings a system overrides
 
-A user can change any of your plugin's own settings (`Config`) for one
-system, for example to send its calls to another server. Each system's
-`settings` is your `Config` with that system's changes applied. Read your
-settings from there for anything a system's calls use, and from
-`setup.config` only for what belongs to the whole plugin, like a log file:
+You can let a system set some of your plugin's own settings (`Config`) again
+for itself, for example to send its calls to another server. Name those
+settings (their keys, as the form has them) in the manifest's
+`system_overrides`:
+
+```rust
+fn manifest() -> Manifest {
+    Manifest { system_overrides: vec!["server".into()], ..trunk_recorder_plugin::manifest!() }
+}
+```
+
+A system's card in Setup then offers those settings, and no others. None is
+the default: every system has your settings as they are. Name only the
+settings you read for each system; the recorder ignores any other a system
+has saved, and says so in your log.
+
+Each system's `settings` is your `Config` with that system's changes applied.
+Read those settings from there for anything a system's calls use, and from
+`setup.config` for what belongs to the whole plugin, like a log file:
 
 ```rust
 for s in &setup.systems {
@@ -194,6 +214,67 @@ one that's down doesn't hold up the others: start the `CallQueue` with
 `CallQueue::start_by`, giving it a closure that names each call's server
 (its lane). Each lane gets its own workers, retries and endpoint status.
 
+## Settings for each site
+
+A system with several sites can give each of them some of your `SystemConfig`
+of its own, such as the account an uploader sends that site's calls to. Name
+those settings in the manifest's `site_overrides`:
+
+```rust
+Manifest { site_overrides: vec!["apiKey".into(), "systemId".into()], ..trunk_recorder_plugin::manifest!() }
+```
+
+A system's card then has a row for each of its sites with those fields, empty
+ones taking the system's. Each of `system.sites` has the site's `id`, `name`,
+and `config`: your `SystemConfig` with what the site set again (`None`: as the
+system's).
+
+For a recorded call, `system.targets(&call.call)` gives the settings it goes
+with: those of each site that heard it that has its own, and the system's once
+when one that heard it has none (or it names no site). A call two such sites
+heard goes to both:
+
+```rust
+for t in system.targets(&call.call) {
+    upload(t.config, &call); // t.site: the site whose own these are (None: the system's)
+}
+```
+
+## Choosing talkgroups
+
+For a plugin that lets each system pick the talkgroups it takes, flatten the
+SDK's `Talkgroups` into your `SystemConfig`. It's the **Talkgroups** menu
+(every talkgroup, only some, all but some) and its lists, as the uploaders
+have it:
+
+```rust
+use trunk_recorder_plugin::Talkgroups;
+
+#[derive(Serialize, Deserialize, JsonSchema, Default)]
+#[serde(rename_all = "camelCase", default)]
+struct SystemConfig {
+    /// API key
+    #[schemars(extend("x-secret" = true))]
+    api_key: String,
+    #[serde(flatten)]
+    talkgroups: Talkgroups,
+}
+```
+
+In `start`, `c.talkgroups.filter_for(&s.short_name)?` checks every entry and
+gives a `TalkgroupFilter`; `filter.passes(call.call.talkgroup)` then says
+whether a call is one of them. An entry that isn't a talkgroup, or **Only
+some** with none listed, is an error that names the system.
+
+## Systems and sites a plugin is off for
+
+The user can turn your plugin off for a system, or for one of a system's
+sites. A system it's off for isn't in `setup.systems`, and nothing about it is
+sent. A site it's off for isn't among its system's `sites`, and a recorded
+call only it heard isn't sent. There's nothing to do in the plugin; just don't
+count on hearing of every system or site. See
+[Events](events.md#systems-and-sites-a-plugin-is-off-for).
+
 ## Checking settings
 
 The SDK rejects settings that don't parse, such as text where a number goes,
@@ -206,8 +287,9 @@ if keys.is_empty() {
 }
 ```
 
-The recorder shows the error, and doesn't start the plugin again until
-recording next starts.
+The recorder shows the error, and doesn't start the plugin again until its
+settings change or recording next starts.
+
 
 ## Seeing the form
 
@@ -217,9 +299,12 @@ build on the **Plugins** page (see
 press **Set up** to see your forms the way users will:
 
 - `Config` is on your plugin's card in Setup's **Plugins** tab, under its
-  on/off switch, with a row of the systems showing which are set up.
+  on/off switch, with its **Systems**: which are set up, and a switch to turn
+  it off for each.
 - `SystemConfig` is on each system's card under **Systems** (and under
-  **Conventional**), once your plugin is on.
+  **Conventional**), once your plugin is on, with the `Config` settings your
+  `system_overrides` names and a row for each site when you name
+  `site_overrides`.
 
 Fields come in declaration order, with labels and help from your doc
 comments, defaults as placeholder text and secrets hidden behind **Show**.
@@ -234,18 +319,21 @@ system field means; the upload-script plugin uses its main script.
 ## Where settings live
 
 In the recorder's `config.json`. Your plugin's switch and `Config` are under
-`plugins`; its `SystemConfig` for a system is inside that system:
+`plugins`, with the systems and sites it's off for (by id); its
+`SystemConfig` for a system is inside that system, with the `Config` settings
+the system sets again in `override`:
 
 ```json
 {
   "plugins": {
-    "my-plugin": { "enabled": true, "settings": { "server": "https://api.example.com", "retries": 3 } }
+    "my-plugin": { "enabled": true, "settings": { "server": "https://api.example.com", "retries": 3 }, "systemsOff": [3] }
   },
   "systems": [
-    { "shortName": "county", …, "plugins": { "my-plugin": { "apiKey": "…" } } }
+    { "shortName": "county", …, "plugins": { "my-plugin": { "apiKey": "…", "override": { "server": "https://b.example.com" } } } }
   ]
 }
 ```
+
 
 A system's settings go with it when it's renamed, and when it's removed.
 Uninstalling a plugin removes its settings everywhere.

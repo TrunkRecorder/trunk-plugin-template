@@ -37,15 +37,19 @@ mod tests {
 | | |
 |---|---|
 | `testing::temp_dir(name)` | A fresh, empty folder. |
-| `testing::hello(dir, config)` | A `hello` with your settings as JSON, and one P25 system, `sys1` (index 0). Its settings for that system are `hello.systems[0].config`. The data folder is `dir/data`. Calls come as WAV and M4A; set `hello.audio_formats = vec!["wav".into()]` for a recorder with no M4A encoder. |
-| `testing::call(dir, short_name, tg)` | A 3-second call on system 0, with its files written under `dir`: the JSON, a silent WAV, and a placeholder M4A in `files.m4a` (not real audio). Set `files.m4a = None` for a call that couldn't be encoded, or `system` for another system. |
+| `testing::hello(dir, config)` | A `hello` with your settings as JSON, and one P25 system, `sys1` (index 0, id 0, no sites). Its settings for that system are `hello.systems[0].config`; push another `SystemInfo` to `hello.systems` for more. The data folder is `dir/data`. Calls come as WAV and M4A; set `hello.audio_formats = vec!["wav".into()]` for a recorder with no M4A encoder. |
+| `testing::call(dir, short_name, tg)` | A 3-second call (`audio_ms()` 3000) on system 0 (its `system_id` 0), with its files written under `dir`: the JSON, a silent WAV, and a placeholder M4A in `files.m4a` (not real audio). Set `files.m4a = None` for a call that couldn't be encoded; `system` and `call.system_id` for another system; `call.sites` for the sites that heard it. |
 | `testing::run::<P>(messages)` | Runs the plugin on the messages, then ends its input, so `shutdown` runs, and returns what it said. |
 | `out.ready()` | It started: its settings were good. |
 | `out.exit_code` | `EXIT_CONFIG` (78) if `start` refused the settings. |
-| `out.results()`, `out.logs()`, `out.status()` | What it reported. |
+| `out.results()`, `out.logs()`, `out.status()`, `out.metrics()` | What it reported. `out.messages` has every message it sent. |
 | `testing::capture()` | A `Host` that keeps what it's sent, for testing a part of your plugin on its own. `captured.output()` reads it back. |
 
+Other events are structs with defaults, so build the fields you need:
+`HostMessage::CallStart(CallInfo { id: 7, talkgroup: 101, ..Default::default() })`.
+
 Things worth a test:
+
 
 - Good settings start the plugin; each kind of bad setting doesn't, with a
   message that says what to fix.
@@ -123,7 +127,8 @@ The protocol is JSON lines, so you can also type at a plugin:
 
 ```sh
 ./target/debug/my-plugin
-{"type":"hello","api":1,"config":{},"systems":[{"index":0,"short_name":"sys1","kind":"p25"}]}
+{"type":"hello","api":1,"config":{},"systems":[{"index":0,"id":1,"short_name":"sys1","kind":"p25"}]}
+
 ```
 
 It answers `{"type":"ready"}` if it started. See [Protocol](protocol.md).

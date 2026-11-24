@@ -90,7 +90,8 @@ system, keyed by the system's short name. See [Settings](settings.md).
 
 ## 5. Write your plugin
 
-Start with `src/main.rs`. The example shows each part a plugin has:
+Start with `src/main.rs`. It's built on the Rust SDK, `trunk-recorder-plugin`
+0.15.1 (in `Cargo.toml`). The example shows each part a plugin has:
 
 - `Config` and `SystemConfig`: the settings, with doc comments that become the
   form's labels.
@@ -125,7 +126,9 @@ with `--describe` and adds it, turned off, marked *your build*. Then:
    with its id.
 
 Settings save as they're typed. While recording, a change to a plugin's
-settings, or turning it off and on, restarts the plugins. After you rebuild,
+settings, or turning it off and on, restarts the plugins (a plugin with
+`live_settings` takes its own new settings as it runs instead).
+ After you rebuild,
 turn yours off and on to run the new build.
 
 It's all in the recorder's `config.json`:
