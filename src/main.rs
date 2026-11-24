@@ -2,9 +2,11 @@
 //! every recorded call.
 //!
 //! It's the template's example: replace it with your plugin. It shows the
-//! parts every plugin has — settings (for the plugin and for each system), a
-//! manifest, startup, handling an event, reporting back, and shutting down.
+//! parts every plugin has — settings (for the plugin, for each system, and
+//! one a system can set again), a manifest, startup, handling an event,
+//! reporting back, and shutting down.
 
+use std::collections::HashMap;
 use std::fs::{File, OpenOptions};
 use std::io::{BufWriter, Write};
 use std::path::PathBuf;
@@ -24,6 +26,8 @@ struct Config {
     /// Where the lines go. A relative path is in the plugin's data folder.
     file: String,
     /// Log encrypted calls
+    ///
+    /// A system can set this again for itself (the manifest's `system_overrides`).
     include_encrypted: bool,
 }
 
@@ -33,12 +37,12 @@ impl Default for Config {
     }
 }
 
-/// Settings for each system (repeated under each in the form).
+/// Settings for each system (repeated under each in the form). Leaving a
+/// system out needs no setting: Setup turns a plugin off for a system, and
+/// the plugin is then told nothing of it.
 #[derive(Serialize, Deserialize, JsonSchema, Default)]
 #[serde(rename_all = "camelCase", default)]
 struct SystemConfig {
-    /// Leave this system out
-    skip: bool,
     /// Label
     ///
     /// Written with its calls instead of the system's short name.
@@ -48,9 +52,8 @@ struct SystemConfig {
 struct CallLog {
     host: Host,
     out: BufWriter<File>,
-    /// Per system, by short name: the label (None to skip it), and whether
-    /// its encrypted calls are logged.
-    labels: Vec<(String, Option<String>, bool)>,
+    /// Per system, by its id: the label, and whether its encrypted calls are logged.
+    systems: HashMap<u32, (String, bool)>,
 }
 
 impl Plugin for CallLog {
@@ -61,6 +64,8 @@ impl Plugin for CallLog {
         Manifest {
             name: "Call log".into(),
             subscribe: vec![topic::CALL_CONCLUDED.into()],
+            // The plugin settings a system may set again for itself.
+            system_overrides: vec!["includeEncrypted".into()],
             // The id, version, description, … come from Cargo.toml.
             ..trunk_recorder_plugin::manifest!()
         }
@@ -74,29 +79,23 @@ impl Plugin for CallLog {
         }
         // An Err here is shown to the user as a settings problem.
         let file = OpenOptions::new().create(true).append(true).open(&path).map_err(|e| format!("can't open {}: {e}", path.display()))?;
-        let labels = setup
+        let systems = setup
             .systems
             .iter()
             .map(|s| {
-                let c = s.config.as_ref();
-                let label = match c {
-                    Some(c) if c.skip => None,
-                    Some(c) if !c.label.is_empty() => Some(c.label.clone()),
-                    _ => Some(s.short_name.clone()),
-                };
-                // A system can override the plugin's settings: read them from `s.settings`.
-                (s.short_name.clone(), label, s.settings.include_encrypted)
+                let label = s.config.as_ref().map(|c| c.label.clone()).filter(|l| !l.is_empty()).unwrap_or_else(|| s.short_name.clone());
+                // `s.settings` is the plugin's settings as this system has them (its overrides applied).
+                (s.id, (label, s.settings.include_encrypted))
             })
             .collect();
         host.info(format!("logging calls to {}", path.display()));
-        Ok(CallLog { host, out: BufWriter::new(file), labels })
+        Ok(CallLog { host, out: BufWriter::new(file), systems })
     }
 
     fn call_concluded(&mut self, call: ConcludedCall) {
-        // Systems are known by short name: every event carries it.
-        let system = self.labels.iter().find(|(n, ..)| *n == call.call.short_name);
-        let Some((_, Some(label), include_encrypted)) = system.cloned() else {
-            self.host.call_result(&call.path, Outcome::Skipped, "system not logged", "");
+        // A system is known by its id (`system_id`), which stays when it's renamed; its short name is for showing.
+        let Some((label, include_encrypted)) = self.systems.get(&call.call.system_id).cloned() else {
+            self.host.call_result(&call.path, Outcome::Skipped, "unknown system", "");
             return;
         };
         if call.call.encrypted && !include_encrypted {
@@ -109,7 +108,8 @@ impl Plugin for CallLog {
             "talkgroup": c.talkgroup,
             "tag": c.talkgroup_tag,
             "start": c.start_time,
-            "seconds": c.call_length,
+            // `audio_ms()`, not `call_length` (whole seconds).
+            "ms": c.audio_ms(),
             "units": c.src_list.iter().map(|s| s.src).collect::<Vec<_>>(),
             "wav": call.files.wav,
         });
@@ -147,15 +147,21 @@ mod tests {
         let line: Value = serde_json::from_str(&std::fs::read_to_string(dir.join("data/out.jsonl")).unwrap()).unwrap();
         assert_eq!(line["system"], "County");
         assert_eq!(line["talkgroup"], 101);
+        assert_eq!(line["ms"], 3000);
     }
 
     #[test]
-    fn skips_a_system_left_out() {
+    fn a_system_sets_its_own_setting_again() {
         let dir = testing::temp_dir("call-log");
-        let mut hello = testing::hello(&dir, Value::Null);
-        hello.systems[0].config = json!({ "skip": true });
-        let out = testing::run::<CallLog>([HostMessage::Hello(hello), HostMessage::CallConcluded(testing::call(&dir, "sys1", 7))]);
-        assert_eq!(out.results()[0].1, Outcome::Skipped);
+        let mut hello = testing::hello(&dir, json!({ "includeEncrypted": false }));
+        hello.systems[0].settings = json!({ "includeEncrypted": true });
+        let mut call = testing::call(&dir, "sys1", 7);
+        call.call.encrypted = true;
+        let out = testing::run::<CallLog>([HostMessage::Hello(hello.clone()), HostMessage::CallConcluded(call.clone())]);
+        assert_eq!(out.results()[0].1, Outcome::Ok, "the system's own setting");
+        hello.systems[0].settings = Value::Null;
+        let out = testing::run::<CallLog>([HostMessage::Hello(hello), HostMessage::CallConcluded(call)]);
+        assert_eq!(out.results()[0].1, Outcome::Skipped, "the plugin's");
     }
 
     #[test]
